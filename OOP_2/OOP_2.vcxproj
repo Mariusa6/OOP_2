@@ -150,6 +150,7 @@
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="OOP_2.cpp" />
     <ClCompile Include="print.cpp" />
+    <ClCompile Include="studentas.cpp" />
     <ClCompile Include="test.cpp" />
   </ItemGroup>
   <ItemGroup>
