@@ -161,6 +161,7 @@
     <ClInclude Include="menu.h" />
     <ClInclude Include="output.h" />
     <ClInclude Include="print.h" />
+    <ClInclude Include="studentas.h" />
     <ClInclude Include="test.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
