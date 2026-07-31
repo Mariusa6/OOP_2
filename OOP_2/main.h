@@ -65,8 +65,7 @@ char askOutputChoice();
 char askContainerChoice();
 
 // Calculation functions
-double calculateGalutinisMedian(const studentas& s);
-double calculateGalutinisAverage(const studentas& s);
+double mediana(const std::vector<int>& namuDarbai);
 
 // File handling functions
 std::string enterFileName();
