@@ -15,6 +15,7 @@ template<typename Container>
 void testGenerateStudentai(int n)
 {
     std::cout << u8"=== Studentų failo generavimo testavimas: " << n << u8" studentų ===\n";
+
     auto start = std::chrono::high_resolution_clock::now();
     Container studentai = generateStudentai<Container>(n);
     auto end = std::chrono::high_resolution_clock::now();
@@ -35,45 +36,44 @@ void testGenerateStudentai(int n)
 template<typename Container>
 void testData(int n)
 {
-    Container studentai;
-
     auto startTotal = std::chrono::high_resolution_clock::now();
     std::cout << u8"Pradedamas testavimas su " << n << u8" studentų duomenimis.\n";
     std::cout << u8"------------------------------------------------------------\n";
 
     auto start = std::chrono::high_resolution_clock::now();
-
-    studentai = readStudentaiFromFile<Container>("data/studentai" + std::to_string(n) + ".txt");
-
+    Container studentai = readStudentaiFromFile<Container>(
+        "data/studentai" + std::to_string(n) + ".txt");
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     std::cout << n << u8" failo skaitymas užtruko: " << elapsed.count() << u8" sekundžių.\n";
 
-    calculateGalutinis(studentai);
     sortStudentai(studentai, '4');
 
     auto start2 = std::chrono::high_resolution_clock::now();
-
     splitResult<Container> result = splitStudentai<Container>(studentai);
-
     auto end2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed2 = end2 - start2;
-    std::cout << n << u8" skirstymas į kietiakai ir vargsiukai užtruko: " << elapsed2.count() << u8" sekundžių.\n";
+    std::cout << n << u8" skirstymas į kietiakai ir vargsiukai užtruko: "
+        << elapsed2.count() << u8" sekundžių.\n";
 
     auto start3 = std::chrono::high_resolution_clock::now();
     writeStudentaiListToFile<Container>(result.kietiakai, "testkietiakai" + std::to_string(n) + ".txt");
     auto end3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed3 = end3 - start3;
-    std::cout << n << u8" Kietiakai failo generavimas užtruko: " << elapsed3.count() << u8" sekundžių.\n";
+    std::cout << n << u8" Kietiakai failo generavimas užtruko: "
+        << elapsed3.count() << u8" sekundžių.\n";
 
     auto start4 = std::chrono::high_resolution_clock::now();
     writeStudentaiListToFile<Container>(result.vargsiukai, "testvargsiukai" + std::to_string(n) + ".txt");
     auto end4 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed4 = end4 - start4;
+
     auto endTotal = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsedTotal = endTotal - startTotal;
-    std::cout << n << u8" Vargsiukai failo generavimas užtruko: " << elapsed4.count() << u8" sekundžių.\n";
-    std::cout << n << u8" Visas testavimas užtruko: " << elapsedTotal.count() << u8" sekundžių.\n\n";
+    std::cout << n << u8" Vargsiukai failo generavimas užtruko: "
+        << elapsed4.count() << u8" sekundžių.\n";
+    std::cout << n << u8" Visas testavimas užtruko: "
+        << elapsedTotal.count() << u8" sekundžių.\n\n";
 }
 
 #endif
