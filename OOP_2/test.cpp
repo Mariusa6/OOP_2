@@ -1,6 +1,4 @@
 #include "test.h"
-#include "calculate.h"
-#include "file.h"
 
 // -------------------------------------------------------
 // Vidinis šablonas — naudojamas tik šiame faile.
@@ -8,12 +6,13 @@
 //   1. Nuskaitymas iš failo
 //   2. Rikiavimas
 //   3. Skirstymas į dvi grupes
+//
+// Galutiniai balai apskaičiuojami nuskaitymo metu (klasės viduje),
+// todėl atskiro skaičiavimo žingsnio nebėra.
 // -------------------------------------------------------
 template<typename Container>
 static void testContainer(const std::string& label, const std::string& filename)
 {
-
-
     std::cout << u8"  [" << label << u8"]\n";
 
     // 1. Nuskaitymas
@@ -23,9 +22,6 @@ static void testContainer(const std::string& label, const std::string& filename)
     std::chrono::duration<double> elapsed = end - start;
     std::cout << u8"    Nuskaitymas: " << elapsed.count() << u8" s\n";
 
-    // Galutinių balų skaičiavimas (būtinas prieš rikiavimą, neįtraukiamas į matavimą)
-    calculateGalutinis(studentai);
-
     // 2. Rikiavimas
     // vector/deque: std::sort  |  list: .sort()  (sprendžiama if constexpr calculate.h)
     auto start2 = std::chrono::high_resolution_clock::now();
@@ -34,10 +30,9 @@ static void testContainer(const std::string& label, const std::string& filename)
     std::chrono::duration<double> elapsed2 = end2 - start2;
     std::cout << u8"    Rikiavimas:  " << elapsed2.count() << u8" s\n";
 
-    // 3. Skirstymas į dvi grupes
-    Container vargsiukai;
+    // 3. Skirstymas į dvi grupes (3 strategija)
     auto start3 = std::chrono::high_resolution_clock::now();
-    vargsiukai = partitionStudentai(studentai);
+    Container vargsiukai = partitionStudentai(studentai);
     auto end3 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed3 = end3 - start3;
     std::cout << u8"    Skirstymas:  " << elapsed3.count() << u8" s\n";
