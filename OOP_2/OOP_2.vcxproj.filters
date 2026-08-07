@@ -18,9 +18,6 @@
     <ClCompile Include="OOP_2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="calculate.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="enter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

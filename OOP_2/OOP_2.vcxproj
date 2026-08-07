@@ -143,7 +143,6 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="calculate.cpp" />
     <ClCompile Include="enter.cpp" />
     <ClCompile Include="file.cpp" />
     <ClCompile Include="generate.cpp" />
