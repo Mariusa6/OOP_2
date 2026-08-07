@@ -6,6 +6,10 @@
 #include "output.h"
 #include "test.h"
 
+// -------------------------------------------------------
+// runProgram<Container> — pagrindinis programos ciklas.
+// Vienas kodo kelias veikia su vector, list ir deque.
+// -------------------------------------------------------
 template<typename Container>
 void runProgram()
 {
@@ -24,7 +28,6 @@ void runProgram()
             return;
         case '1':
             studentai = enterStudentai<Container>();
-            calculateGalutinis<Container>(studentai);
             sortChoice = askSortBy();
             sortStudentai<Container>(studentai, sortChoice);
             vargsiukai = partitionStudentai(studentai);
@@ -34,7 +37,6 @@ void runProgram()
             break;
         case '2':
             studentai = generateOnlyPazymiai<Container>(enterNumberOfStudents());
-            calculateGalutinis<Container>(studentai);
             sortChoice = askSortBy();
             sortStudentai<Container>(studentai, sortChoice);
             vargsiukai = partitionStudentai(studentai);
@@ -44,7 +46,6 @@ void runProgram()
             break;
         case '3':
             studentai = generateStudentai<Container>(enterNumberOfStudents());
-            calculateGalutinis<Container>(studentai);
             sortChoice = askSortBy();
             sortStudentai<Container>(studentai, sortChoice);
             vargsiukai = partitionStudentai(studentai);
@@ -54,7 +55,6 @@ void runProgram()
             break;
         case '4':
             studentai = readStudentaiFromFile<Container>(enterFileName());
-            calculateGalutinis<Container>(studentai);
             sortChoice = askSortBy();
             sortStudentai<Container>(studentai, sortChoice);
             vargsiukai = partitionStudentai(studentai);
@@ -96,10 +96,10 @@ void runProgram()
 
 int main()
 {
-    #ifdef _WIN32
-        SetConsoleOutputCP(CP_UTF8);
-        SetConsoleCP(CP_UTF8);
-    #endif
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+#endif
 
     printWelcome();
 
