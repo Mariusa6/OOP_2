@@ -28,6 +28,7 @@ void runProgram()
             return;
         case '1':
             studentai = enterStudentai<Container>();
+            calculateGalutinis(studentai);
             sortChoice = askSortBy();
             sortStudentai<Container>(studentai, sortChoice);
             vargsiukai = partitionStudentai(studentai);
@@ -37,6 +38,7 @@ void runProgram()
             break;
         case '2':
             studentai = generateOnlyPazymiai<Container>(enterNumberOfStudents());
+            calculateGalutinis(studentai);
             sortChoice = askSortBy();
             sortStudentai<Container>(studentai, sortChoice);
             vargsiukai = partitionStudentai(studentai);
@@ -46,6 +48,7 @@ void runProgram()
             break;
         case '3':
             studentai = generateStudentai<Container>(enterNumberOfStudents());
+            calculateGalutinis(studentai);
             sortChoice = askSortBy();
             sortStudentai<Container>(studentai, sortChoice);
             vargsiukai = partitionStudentai(studentai);
@@ -55,6 +58,7 @@ void runProgram()
             break;
         case '4':
             studentai = readStudentaiFromFile<Container>(enterFileName());
+            calculateGalutinis(studentai);
             sortChoice = askSortBy();
             sortStudentai<Container>(studentai, sortChoice);
             vargsiukai = partitionStudentai(studentai);

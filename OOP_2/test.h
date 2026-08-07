@@ -47,6 +47,7 @@ void testData(int n)
     std::chrono::duration<double> elapsed = end - start;
     std::cout << n << u8" failo skaitymas užtruko: " << elapsed.count() << u8" sekundžių.\n";
 
+    calculateGalutinis(studentai);
     sortStudentai(studentai, '4');
 
     auto start2 = std::chrono::high_resolution_clock::now();

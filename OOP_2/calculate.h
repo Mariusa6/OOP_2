@@ -4,9 +4,22 @@
 #include "main.h"
 #include <vector>       // vector
 #include <algorithm>    // sort, partition_copy, stable_partition
-#include <iterator>     // back_inserter
+#include <iterator>     // back_inserter, make_move_iterator
 #include <type_traits>  // is_same_v
 #include <stdexcept>    // runtime_error
+
+// -------------------------------------------------------
+// Template: calculateGalutinis
+// -------------------------------------------------------
+template<typename Container>
+void calculateGalutinis(Container& studentai)
+{
+    if (studentai.empty())
+        throw std::runtime_error("Studentų sąrašas tuščias — nėra ką skaičiuoti.");
+
+    for (auto& s : studentai)
+        s.calculateGalutinis();
+}
 
 // -------------------------------------------------------
 // Template: sortStudentai
