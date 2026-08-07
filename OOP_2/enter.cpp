@@ -1,14 +1,19 @@
 #include "enter.h"
 
+// -------------------------------------------------------
+// enterStudentas — surenka vieno studento duomenis ir sukuria
+// objektą per pilną konstruktorių (jis validuoja ir apskaičiuoja).
+// -------------------------------------------------------
 studentas enterStudentas(int n)
 {
-    studentas ivedamas;
-    std::cout << '#' << n << " studentas:\n";
-    ivedamas.vardas = enterName(n);
-    ivedamas.pavarde = enterSurname(n);
-    ivedamas.namuDarbai = enterPazymiai(n, enterNumberOfPazymys(n));
-    ivedamas.egzaminas = enterEgzaminas(n);
-    return ivedamas;
+    std::cout << '#' << n << u8" studentas:\n";
+
+    std::string vardas = enterName(n);
+    std::string pavarde = enterSurname(n);
+    std::vector<int> nd = enterPazymiai(n, enterNumberOfPazymys(n));
+    int egzaminas = enterEgzaminas(n);
+
+    return studentas(vardas, pavarde, nd, egzaminas);
 }
 
 std::string enterName(int n)
@@ -20,7 +25,7 @@ std::string enterName(int n)
     {
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << u8"Naudokite raides. Iveskite studento varda: ";
+        std::cout << u8"Naudokite raides. Iveskite studento vardą: ";
     }
 
     return v;
@@ -62,12 +67,13 @@ int enterPazymys(int n)
 {
     int tmp{};
 
-    std::cout << u8"" << n << u8" pažymys: ";
-    while (!(std::cin >> tmp) || tmp < minPazymys || tmp > maxPazymys)
+    std::cout << n << u8" pažymys: ";
+    while (!(std::cin >> tmp) || tmp < studentas::minPazymys || tmp > studentas::maxPazymys)
     {
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << u8"Iveskite skaičių nuo " << minPazymys << u8" iki " << maxPazymys << u8".\n";
+        std::cout << u8"Iveskite skaičių nuo " << studentas::minPazymys
+            << u8" iki " << studentas::maxPazymys << u8".\n";
         std::cout << n << u8" pažymys: ";
     }
 
@@ -90,11 +96,12 @@ int enterEgzaminas(int n)
     int tmp{};
 
     std::cout << u8"Iveskite kiek #" << n << u8" studentas gavo iš egzamino.\n";
-    while (!(std::cin >> tmp) || tmp < minPazymys || tmp > maxPazymys)
+    while (!(std::cin >> tmp) || tmp < studentas::minPazymys || tmp > studentas::maxPazymys)
     {
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << u8"Iveskite skaičių nuo " << minPazymys << u8" iki " << maxPazymys << u8".\n";
+        std::cout << u8"Iveskite skaičių nuo " << studentas::minPazymys
+            << u8" iki " << studentas::maxPazymys << u8".\n";
         std::cout << u8"Iveskite kiek #" << n << u8" studentas gavo iš egzamino.\n";
     }
 
