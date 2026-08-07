@@ -14,16 +14,6 @@
 
 #define NUMBER_OF_PAZYMYS 15
 
-struct studentas
-{
-    std::string vardas{};
-    std::string pavarde{};
-    std::vector<int> namuDarbai;
-    int egzaminas{};
-    double galutinisVid{};
-    double galutinisMed{};
-};
-
 template<typename Container>
 struct splitResult
 {
@@ -33,9 +23,6 @@ struct splitResult
 
 const int minPazymys{ 1 };
 const int maxPazymys{ 10 };
-
-const double namuDarbaiSvertis{ 0.4 };
-const double egzaminasSvertis{ 0.6 };
 
 // Function declarations
 

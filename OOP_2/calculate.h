@@ -9,23 +9,6 @@
 #include <stdexcept> // runtime_error
 
 // -------------------------------------------------------
-// Template: calculateGalutinis
-// Veikia su bet kokiu konteineriu (vector, list, deque).
-// -------------------------------------------------------
-template<typename Container>
-void calculateGalutinis(Container& studentai)
-{
-    if (studentai.empty())
-        throw std::runtime_error("Studentų sąrašas tuščias — nėra ką skaičiuoti.");
-
-    for (auto& s : studentai)
-    {
-        s.galutinisVid = calculateGalutinisAverage(s);
-        s.galutinisMed = calculateGalutinisMedian(s);
-    }
-}
-
-// -------------------------------------------------------
 // Template: sortStudentai
 // std::list neturi random-access iteratorių, todėl
 // naudojamas nario metodas .sort(); vektoriui ir deque
@@ -38,18 +21,17 @@ void sortStudentai(Container& studentai, char sortBy)
         {
             switch (sortBy)
             {
-            case '1': return a.vardas < b.vardas;
-            case '2': return a.pavarde < b.pavarde;
-            case '3': return a.galutinisVid > b.galutinisVid;
-            case '4': return a.galutinisMed > b.galutinisMed;
+            case '1': return a.comparePagalVarda();
+            case '2': return a.comparePagalPavarde();
+            case '3': return a.comparePagalGalutini();
             default:  return false;
             }
         };
 
     if constexpr (std::is_same_v<Container, std::list<studentas>>)
-        studentai.sort(cmp);           // list narys — O(n log n) be RA iteratorių
+        studentai.sort(cmp);
     else
-        std::sort(studentai.begin(), studentai.end(), cmp);  // vector / deque
+        std::sort(studentai.begin(), studentai.end(), cmp);
 }
 
 // -------------------------------------------------------
