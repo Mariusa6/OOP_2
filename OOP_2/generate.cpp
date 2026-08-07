@@ -9,7 +9,8 @@ std::mt19937& getRng()
 std::vector<int> generatePazymiai(int m) // m - pažymių skaičius
 {
     std::vector<int> tmp;
-    std::uniform_int_distribution<int> dist(minPazymys, maxPazymys);
+    tmp.reserve(m);
+    std::uniform_int_distribution<int> dist(studentas::minPazymys, studentas::maxPazymys);
     std::mt19937& rng = getRng();
     for (int i{ 0 }; i < m; i++)
     {
