@@ -2,17 +2,14 @@
 #define CALCULATE_H_DEFINED
 
 #include "main.h"
-#include <vector>   // vector
-#include <algorithm> // sort
-#include <numeric>  // accumulate
-#include <chrono>   // high_resolution_clock
-#include <stdexcept> // runtime_error
+#include <vector>       // vector
+#include <algorithm>    // sort, partition_copy, stable_partition
+#include <iterator>     // back_inserter
+#include <type_traits>  // is_same_v
+#include <stdexcept>    // runtime_error
 
 // -------------------------------------------------------
 // Template: sortStudentai
-// std::list neturi random-access iteratorių, todėl
-// naudojamas nario metodas .sort(); vektoriui ir deque
-// naudojamas std::sort (if constexpr, C++17).
 // -------------------------------------------------------
 template<typename Container>
 void sortStudentai(Container& studentai, char sortBy)
@@ -21,22 +18,24 @@ void sortStudentai(Container& studentai, char sortBy)
         {
             switch (sortBy)
             {
-            case '1': return a.comparePagalVarda();
-            case '2': return a.comparePagalPavarde();
-            case '3': return a.comparePagalGalutini();
+            case '1': return comparePagalVarda(a, b);
+            case '2': return comparePagalPavarde(a, b);
+            case '3': return comparePagalVidurki(a, b);
+            case '4': return comparePagalMediana(a, b);
             default:  return false;
             }
         };
 
     if constexpr (std::is_same_v<Container, std::list<studentas>>)
-        studentai.sort(cmp);
+        studentai.sort(cmp);                                 // list narys
     else
-        std::sort(studentai.begin(), studentai.end(), cmp);
+        std::sort(studentai.begin(), studentai.end(), cmp);  // vector / deque
 }
 
 // -------------------------------------------------------
-// Template: splitResult
-// Veikia su bet kokiu konteineriu (vector, list, deque).
+// Template: splitStudentai  (1 strategija)
+// Skaido į DU naujus konteinerius, originalas nekeičiamas.
+// Neefektyvu atminties atžvilgiu — duomenys dublikuojami.
 // -------------------------------------------------------
 template<typename Container>
 splitResult<Container> splitStudentai(const Container& studentai)
@@ -46,23 +45,25 @@ splitResult<Container> splitStudentai(const Container& studentai)
     std::partition_copy(studentai.begin(), studentai.end(),
         std::back_inserter(result.kietiakai),
         std::back_inserter(result.vargsiukai),
-        [](const studentas& s) { return s.galutinisVid >= 5.0; });
+        [](const studentas& s) { return s.galutinisVid() >= 5.0; });
 
     return result;
 }
 
 // -------------------------------------------------------
-// Template: partitionStudentai
-// Veikia su bet kokiu konteineriu (vector, list, deque).
+// Template: partitionStudentai  (3 strategija — optimaliausia)
+// Perskirsto originalų konteinerį vietoje, vargsiukus perkelia
+// į naują konteinerį ir blokiniu erase pašalina iš originalo.
+// Po iškvietimo studentai konteineryje lieka tik kietiakai.
 // -------------------------------------------------------
-
 template<typename Container>
 Container partitionStudentai(Container& studentai)
 {
     auto it = std::stable_partition(studentai.begin(), studentai.end(),
-        [](const studentas& s) { return s.galutinisVid >= 5.0; });
+        [](const studentas& s) { return s.galutinisVid() >= 5.0; });
 
-    Container vargsiukai(it, studentai.end());
+    Container vargsiukai(std::make_move_iterator(it),
+        std::make_move_iterator(studentai.end()));
     studentai.erase(it, studentai.end());
 
     return vargsiukai;
