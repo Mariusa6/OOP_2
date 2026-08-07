@@ -8,57 +8,19 @@
 #include <sstream>  // istringstream
 #include <vector>   // vector
 #include <string>   // string
-#include <chrono>   // high_resolution_clock
 #include <iomanip>  // setprecision, setw
 #include <limits>   // numeric_limits
-
-// -------------------------------------------------------
-// Pagalbinė funkcija: nuskaito vieną studentas iš eilutės.
-// Naudojama šablone readStudentaiFromFile<Container>.
-// -------------------------------------------------------
-inline studentas parseStudentasLine(const std::string& line,
-    int ndCount,
-    int lineNumber)
-{
-    std::istringstream ss(line);
-    studentas s;
-
-    if (!(ss >> s.vardas >> s.pavarde))
-        throw std::runtime_error("Eilutėje " + std::to_string(lineNumber)
-            + " trūksta vardo arba pavardės.");
-
-    for (int i = 0; i < ndCount; i++)
-    {
-        int nd;
-        if (!(ss >> nd))
-            throw std::runtime_error("Eilutėje " + std::to_string(lineNumber)
-                + " trūksta namų darbo pažymio.");
-        if (nd < minPazymys || nd > maxPazymys)
-            throw std::runtime_error("Eilutėje " + std::to_string(lineNumber)
-                + " pažymys už ribų ("
-                + std::to_string(minPazymys) + "-"
-                + std::to_string(maxPazymys) + "): "
-                + std::to_string(nd));
-        s.namuDarbai.push_back(nd);
-    }
-
-    if (!(ss >> s.egzaminas))
-        throw std::runtime_error("Eilutėje " + std::to_string(lineNumber)
-            + " trūksta egzamino pažymio.");
-    if (s.egzaminas < minPazymys || s.egzaminas > maxPazymys)
-        throw std::runtime_error("Eilutėje " + std::to_string(lineNumber)
-            + " egzamino pažymys už ribų ("
-            + std::to_string(minPazymys) + "-"
-            + std::to_string(maxPazymys) + "): "
-            + std::to_string(s.egzaminas));
-    return s;
-}
+#include <stdexcept>// runtime_error
 
 // -------------------------------------------------------
 // Template: readStudentaiFromFile<Container>
 // Nuskaito studentus iš .txt failo į bet kokį konteinerį
 // (vector, list, deque) naudojant push_back.
 // Failo formatas: antraštė su ND1..NDn ir Egzaminas stulpeliais.
+//
+// Eilutės nuskaitymą ir validaciją atlieka pati klasė
+// (studentas::readStudentas), kuri meta std::runtime_error
+// su eilutės numeriu, jei duomenys netinkami.
 // -------------------------------------------------------
 template<typename Container>
 Container readStudentaiFromFile(const std::string& filename)
@@ -86,7 +48,11 @@ Container readStudentaiFromFile(const std::string& filename)
     {
         lineNumber++;
         if (line.empty()) continue;
-        studentai.push_back(parseStudentasLine(line, ndCount, lineNumber));
+
+        std::istringstream ss(line);
+        studentas s;
+        s.readStudentas(ss, ndCount, lineNumber);
+        studentai.push_back(std::move(s));
     }
 
     return studentai;
@@ -94,7 +60,8 @@ Container readStudentaiFromFile(const std::string& filename)
 
 // -------------------------------------------------------
 // Template: writeStudentaiToFile
-// Išveda studentus į .txt failą su antrašte.
+// Išveda studentus į .txt failą su galutiniais balais.
+// Formatavimą atlieka klasės operator<<.
 // -------------------------------------------------------
 template<typename Container>
 void writeStudentaiToFile(const Container& studentai, const std::string& filename)
@@ -107,19 +74,15 @@ void writeStudentaiToFile(const Container& studentai, const std::string& filenam
     file << u8"----------------------------------------------------------------------------\n";
 
     for (const auto& s : studentai)
-    {
-        file << std::left << std::setw(20) << s.vardas
-            << std::left << std::setw(20) << s.pavarde
-            << std::left << std::setw(20) << s.galutinisVid
-            << std::left << std::setw(20) << s.galutinisMed << "\n";
-    }
+        file << s << "\n";
 
     file.close();
 }
 
 // -------------------------------------------------------
 // Template: writeStudentaiListToFile
-// Išveda studentus į .txt failą su antrašte ir namų darbų stulpeliais.
+// Išveda studentus į .txt failą su visais namų darbų pažymiais.
+// Šis formatas suderinamas su readStudentaiFromFile skaitymui.
 // -------------------------------------------------------
 template<typename Container>
 void writeStudentaiListToFile(const Container& studentai, const std::string& filename)
@@ -133,22 +96,22 @@ void writeStudentaiListToFile(const Container& studentai, const std::string& fil
 
     for (int i = 1; i <= NUMBER_OF_PAZYMYS; ++i)
     {
-        file << std::right << std::setw(10) << (u8"ND" + std::to_string(i));
+        file << std::right << std::setw(10) << ("ND" + std::to_string(i));
     }
 
     file << std::right << std::setw(10) << u8"Egzaminas" << "\n";
 
     for (const auto& s : studentai)
     {
-        file << std::left << std::setw(25) << s.vardas
-            << std::left << std::setw(25) << s.pavarde;
+        file << std::left << std::setw(25) << s.vardas()
+            << std::left << std::setw(25) << s.pavarde();
 
-        for (const auto& nd : s.namuDarbai)
+        for (const auto& nd : s.nd())
         {
             file << std::right << std::setw(10) << nd;
         }
 
-        file << std::right << std::setw(10) << s.egzaminas << "\n";
+        file << std::right << std::setw(10) << s.egzaminas() << "\n";
     }
     file.close();
 }
