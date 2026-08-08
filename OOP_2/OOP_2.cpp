@@ -5,6 +5,7 @@
 #include "generate.h"
 #include "output.h"
 #include "test.h"
+#include "testStudentas.h"
 
 // -------------------------------------------------------
 // runProgram<Container> — pagrindinis programos ciklas.
@@ -87,6 +88,13 @@ void runProgram()
             testContainers(100000);
             testContainers(1000000);
             testContainers(10000000);
+            break;
+        case '9':
+            // Klasės studentas metodų testas (v1.2)
+            if (testStudentasKlase())
+                std::cout << u8"Visi klases testai praejo sekmingai.\n\n";
+            else
+                std::cout << u8"DEMESIO: kai kurie klases testai nepraejo!\n\n";
             break;
         default:
             std::cout << u8"Neteisingas pasirinkimas. Bandykite dar kartą.\n";
