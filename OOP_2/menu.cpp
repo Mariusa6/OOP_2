@@ -12,14 +12,15 @@ char askMenuChoice()
     std::cout << u8"6. Studentų failų generavimo testavimas\n";
     std::cout << u8"7. Duomenų apdorojimo testavimas\n";
     std::cout << u8"8. Konteinerių palyginimo testavimas\n";
+    std::cout << u8"9. Klasės studentas metodų testavimas\n";
     std::cout << u8"0. Baigti darbą\n";
     std::cout << u8"Jūsų pasirinkimas: ";
     do
     {
         std::cin >> choice;
-        if (choice < '0' || choice > '8')
+        if (choice < '0' || choice > '9')
             std::cout << u8"Netinkama įvestis, bandykite dar kartą: ";
-    } while (choice < '0' || choice > '8');
+    } while (choice < '0' || choice > '9');
     return choice;
 }
 
@@ -115,5 +116,3 @@ char askContainerChoice()
     } while (choice < '1' || choice > '3');
     return choice;
 }
-
-
