@@ -11,16 +11,13 @@
 #include <iomanip>  // setprecision, setw
 #include <limits>   // numeric_limits
 #include <stdexcept>// runtime_error
+#include <chrono>  // high_resolution_clock
 
 // -------------------------------------------------------
 // Template: readStudentaiFromFile<Container>
 // Nuskaito studentus iš .txt failo į bet kokį konteinerį
 // (vector, list, deque) naudojant push_back.
 // Failo formatas: antraštė su ND1..NDn ir Egzaminas stulpeliais.
-//
-// Eilutės nuskaitymą ir validaciją atlieka pati klasė
-// (studentas::readStudentas), kuri meta std::runtime_error
-// su eilutės numeriu, jei duomenys netinkami.
 // -------------------------------------------------------
 template<typename Container>
 Container readStudentaiFromFile(const std::string& filename)
@@ -44,8 +41,9 @@ Container readStudentaiFromFile(const std::string& filename)
         if (token.find("ND") != std::string::npos) ndCount++;
 
     int lineNumber = 1;
-    while (std::getline(file, line))
-    {
+    double tStream = 0, tParse = 0, tPush = 0;
+
+    while (std::getline(file, line)) {
         lineNumber++;
         if (line.empty()) continue;
 

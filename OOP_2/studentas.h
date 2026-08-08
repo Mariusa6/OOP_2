@@ -29,7 +29,7 @@ private:
 	static double mediana(const std::vector<int>& nd);
 
 	// Validacija
-	static void validatePazymys(int p, const std::string& kontekstas);
+	static bool pazymysTinkamas(int p) { return p >= minPazymys && p <= maxPazymys; }
 
 public:
 	// Konstantos

@@ -23,14 +23,6 @@ double studentas::mediana(const std::vector<int>& nd) {
 		return sortedNd[size / 2];
 }
 
-void studentas::validatePazymys(int p, const std::string& kontekstas) {
-	if (p < minPazymys || p > maxPazymys) {
-		throw std::runtime_error(kontekstas + " pažymys už ribų ("
-			+ std::to_string(minPazymys) + "-"
-			+ std::to_string(maxPazymys) + "): " + std::to_string(p));
-	}
-}
-
 // -------------------------------------------------------
 // Konstruktoriai
 // -------------------------------------------------------
@@ -48,8 +40,10 @@ studentas::studentas(const std::string& vardas,
 		throw std::invalid_argument("Pavardė negali būti tuščia");
 
 	for (int p : nd_)
-		validatePazymys(p, "Namų darbo");
-	validatePazymys(egzaminas_, "Egzamino");
+		if (!pazymysTinkamas(p))
+			throw std::runtime_error("Namų darbo pažymys už ribų: " + std::to_string(p));
+	if (!pazymysTinkamas(egzaminas_))
+		throw std::runtime_error("Egzamino pažymys už ribų: " + std::to_string(egzaminas_));
 }
 
 studentas::studentas(std::istream& is)
@@ -74,44 +68,56 @@ void studentas::calculateGalutinis() {
 // -------------------------------------------------------
 
 std::istream& studentas::readStudentas(std::istream& is, int ndCount, int lineNumber) {
-	const std::string vieta = (lineNumber > 0)
-		? "Eilutėje " + std::to_string(lineNumber)
-		: std::string("Įvestyje");
+	// vieta NEkuriama iš anksto — tik prireikus
+	auto vieta = [lineNumber]() -> std::string {
+		return (lineNumber > 0)
+			? "Eilutėje " + std::to_string(lineNumber)
+			: std::string("Įvestyje");
+		};
 
 	if (!(is >> vardas_ >> pavarde_))
-		throw std::runtime_error(vieta + " trūksta vardo arba pavardės.");
+		throw std::runtime_error(vieta() + " trūksta vardo arba pavardės.");
 
 	nd_.clear();
 
 	if (ndCount > 0) {
-		// Žinomas namų darbų skaičius (failo antraštė nurodo ND stulpelius)
 		nd_.reserve(ndCount);
 		for (int i = 0; i < ndCount; ++i) {
 			int p;
 			if (!(is >> p))
-				throw std::runtime_error(vieta + " trūksta namų darbo pažymio.");
-			validatePazymys(p, vieta + " namų darbo");
+				throw std::runtime_error(vieta() + " trūksta namų darbo pažymio.");
+
+			// Patikra be jokio string kūrimo
+			if (!pazymysTinkamas(p))
+				throw std::runtime_error(vieta() + " namų darbo pažymys už ribų ("
+					+ std::to_string(minPazymys) + "-" + std::to_string(maxPazymys)
+					+ "): " + std::to_string(p));
+
 			nd_.push_back(p);
 		}
 		if (!(is >> egzaminas_))
-			throw std::runtime_error(vieta + " trūksta egzamino pažymio.");
+			throw std::runtime_error(vieta() + " trūksta egzamino pažymio.");
 	}
 	else {
-		// Nežinomas skaičius — skaitome iki galo, paskutinis yra egzaminas
 		int p;
 		while (is >> p) {
-			validatePazymys(p, vieta + " namų darbo");
+			if (!pazymysTinkamas(p))
+				throw std::runtime_error(vieta() + " namų darbo pažymys už ribų: "
+					+ std::to_string(p));
 			nd_.push_back(p);
 		}
 		if (nd_.empty())
-			throw std::runtime_error(vieta + " trūksta egzamino pažymio.");
+			throw std::runtime_error(vieta() + " trūksta egzamino pažymio.");
 
 		egzaminas_ = nd_.back();
 		nd_.pop_back();
-		is.clear();   // eilutės pabaiga nėra klaida šiame režime
+		is.clear();
 	}
 
-	validatePazymys(egzaminas_, vieta + " egzamino");
+	if (!pazymysTinkamas(egzaminas_))
+		throw std::runtime_error(vieta() + " egzamino pažymys už ribų: "
+			+ std::to_string(egzaminas_));
+
 	return is;
 }
 
