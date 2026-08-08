@@ -1,4 +1,4 @@
-# Studentų Informacinė Sistema OOP_Marius_Augustinas
+# Studentų Informacinė Sistema OOP_2
 VU ISI Objektinio programavimo kurso laboratoriniai darbai
 
 ---
