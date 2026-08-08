@@ -153,6 +153,7 @@
     <ClCompile Include="print.cpp" />
     <ClCompile Include="studentas.cpp" />
     <ClCompile Include="test.cpp" />
+    <ClCompile Include="teststudentas.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="calculate.h" />
@@ -165,6 +166,7 @@
     <ClInclude Include="print.h" />
     <ClInclude Include="studentas.h" />
     <ClInclude Include="test.h" />
+    <ClInclude Include="teststudentas.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
