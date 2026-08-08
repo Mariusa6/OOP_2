@@ -318,28 +318,22 @@ tikrink(s2.vardas() == s.vardas() && s2.nd() == s.nd() &&
 
 ```
 .
-├── CMakeLists.txt
 ├── LICENSE
 ├── README.md
 ├── docs/                           # Ekrano kopijos
-├── data/                           # Testiniai failai
-│   ├── studentai1000.txt
-│   ├── studentai10000.txt
-│   ├── studentai100000.txt
-│   ├── studentai1000000.txt
-│   └── studentai10000000.txt
-├── studentas.h / studentas.cpp     # class studentas — Rule of Five, operatoriai, I/O
-├── testStudentas.h / .cpp          # Klasės metodų testas (v1.2)
-├── main.h                          # splitResult<T>, funkcijų deklaracijos
-├── OOP_2.cpp                       # main() + runProgram<Container>()
-├── menu.h / menu.cpp               # Meniu funkcijos
-├── enter.h / enter.cpp             # Rankinio įvedimo funkcijos
-├── generate.h / generate.cpp       # Generavimo funkcijos
-├── file.h / file.cpp               # Failo skaitymo ir rašymo šablonai
-├── calculate.h                     # calculateGalutinis<T>, sortStudentai<T>, splitStudentai<T>
-├── output.h                        # outputStudentai<T>
-├── print.h / print.cpp             # Spausdinimo funkcijos
-└── test.h / test.cpp               # Spartos testavimo funkcijos
+├── OOP_2/                          # Programos failai
+│   ├── studentas.h / studentas.cpp     # class studentas — Rule of Five, operatoriai, I/O
+│   ├── testStudentas.h / .cpp          # Klasės metodų testas (v1.2)
+│   ├── main.h                          # splitResult<T>, funkcijų deklaracijos
+│   ├── OOP_2.cpp                       # main() + runProgram<Container>()
+│   ├── menu.h / menu.cpp               # Meniu funkcijos
+│   ├── enter.h / enter.cpp             # Rankinio įvedimo funkcijos
+│   ├── generate.h / generate.cpp       # Generavimo funkcijos
+│   ├── file.h / file.cpp               # Failo skaitymo ir rašymo šablonai
+│   ├── calculate.h                     # calculateGalutinis<T>, sortStudentai<T>, splitStudentai<T>
+│   ├── output.h                        # outputStudentai<T>
+│   ├── print.h / print.cpp             # Spausdinimo funkcijos
+│   └── test.h / test.cpp               # Spartos testavimo funkcijos
 ```
 
 ---
