@@ -1,4 +1,4 @@
-# Studentų Informacinė Sistema OOP_2
+# Studentų Informacinė Sistema OOP_Marius_Augustinas
 VU ISI Objektinio programavimo kurso laboratoriniai darbai
 
 ---
@@ -10,14 +10,15 @@ VU ISI Objektinio programavimo kurso laboratoriniai darbai
 | **v0.1** | Pradinė realizacija — `std::vector`, rankinis įvedimas, vidurkio arba medianos skaičiavimas |
 | **v0.2** | Failo skaitymas ir rašymas, rikiavimas, abu galutiniai balai skaičiuojami vienu metu |
 | **v0.3** | Kodas suskaidytas į modulius (`*.h`/`*.cpp`), išimčių valdymas (`try`/`catch`) |
-| **v0.4** | Studentų skirstymas į dvi grupes, spartos testavimas (1 ir 2 tyrimas), failų generatorius |
-| **v0.5** | Programa pertvarkyta į `template<typename Container>` — vienas kodo kelias `vector`/`list`/`deque`, 3-ias tyrimas (konteinerių palyginimas) |
-| **v1.0** | Trijų skirstymo strategijų realizacija ir spartos palyginimas, atminties analizė, `CMakeLists.txt` |
-| **v1.1** | `struct studentas` → `class studentas`; enkapsuliacija, konstruktoriai, `friend` operatoriai; I/O optimizacija (`from_chars`/`to_chars`); struct vs class spartos ir optimizavimo flag'ų tyrimas |
+| **v0.4** | Studentų skirstymas į dvi grupes, spartos testavimas, failų generatorius |
+| **v0.5** | Programa pertvarkyta į `template<typename Container>` — `vector`/`list`/`deque` |
+| **v1.0** | Trijų skirstymo strategijų palyginimas, atminties analizė, `CMakeLists.txt` |
+| **v1.1** | `struct studentas` → `class studentas`; I/O optimizacija; struct vs class ir optimizavimo flag'ų tyrimas |
+| **v1.2** | Pilna **Rule of Five** realizacija, perdengti įvesties/išvesties ir pagalbiniai operatoriai, automatinis klasės metodų testas |
 
 ---
 
-# v1.1 — Perėjimas nuo `struct` prie `class`
+# v1.2 — Rule of Five ir perdengti operatoriai
 
 ## Techninė aplinka
 
@@ -27,218 +28,323 @@ VU ISI Objektinio programavimo kurso laboratoriniai darbai
 | RAM | 8 GB DDR4 |
 | Saugykla | 250 GB SSD |
 | OS | Windows 11 |
-| **`class` versija** | Visual Studio 2022, MSVC (`cl.exe`), x64 Release |
-| **`struct` versija** | VS Code + MinGW-w64 (`g++`), x64 |
+| Kompiliatorius | Visual Studio 2022, MSVC (`cl.exe`), x64 Release, `/std:c++17` |
 
 ---
 
-## 1. Klasės realizacija
+## 1. Rule of Five — pilna realizacija
 
-### Kas pasikeitė
+Taisyklė teigia: jei klasei reikia aiškiai apibrėžti bent vieną iš penkių specialiųjų funkcijų, greičiausiai reikia apibrėžti visas penkias. Visos jos realizuotos **pilnai** (ne `= default`), kad būtų galima jas demonstruoti ir testuoti.
 
-Ankstesnė struktūra:
-```cpp
-struct studentas {
-    std::string vardas;
-    std::string pavarde;
-    std::vector<int> namuDarbai;
-    int egzaminas;
-    double galutinisVid;
-    double galutinisMed;
-};
-```
-
-Nauja klasė (`studentas.h`) — duomenys `private`, prieiga tik per interfeisą:
-```cpp
-class studentas {
-private:
-    std::string vardas_;
-    std::string pavarde_;
-    std::vector<int> nd_;
-    int egzaminas_;
-    double galutinisVid_;
-    double galutinisMed_;
-
-    static double vidurkis(const std::vector<int>& nd);
-    static double mediana(const std::vector<int>& nd);
-    static inline bool pazymysTinkamas(int p);
-
-public:
-    static constexpr int minPazymys = 1;
-    static constexpr int maxPazymys = 10;
-    static constexpr double namuDarbaiSvoris = 0.4;
-    static constexpr double egzaminasSvoris = 0.6;
-    // ...
-};
-```
-
-### Konstruktoriai ir destruktorius
-
-| Elementas | Realizacija |
-|---|---|
-| **Numatytasis konstruktorius** | `studentas()` — inicijuoja visus laukus per member initializer list |
-| **Pilnas konstruktorius** | `studentas(vardas, pavarde, nd, egzaminas)` — validuoja duomenis, meta `std::invalid_argument` / `std::runtime_error` |
-| **Konstruktorius iš srauto** | `explicit studentas(std::istream&)` — kreipiasi į `readStudentas` |
-| **Destruktorius** | Generuojamas kompiliatoriaus (**Rule of Zero**) |
-| **Kopijavimo / perkėlimo operacijos** | Generuojamos kompiliatoriaus |
-
-**Kodėl destruktorius nedeklaruotas aiškiai.** Klasė nevaldo jokių resursų rankiniu būdu — visi laukai yra `std::string` ir `std::vector`, kurie patys tvarko savo atmintį. Aiškiai apibrėžtas (net ir tuščias) destruktorius `~studentas() {}` **užblokuotų automatinį move konstruktoriaus generavimą**, todėl `std::sort` ir `std::stable_partition` su dideliais konteineriais **kopijuotų** kiekvieną objektą vietoj perkėlimo — kiekviena kopija reikštų tris atminties alokacijas (`vardas_`, `pavarde_`, `nd_`). Todėl laikomasi **Rule of Zero**: kompiliatorius sugeneruoja visas penkias specialiąsias funkcijas, įskaitant `studentas(studentas&&)`.
-
-### Get'eriai ir set'eriai
+### 1.1 Destruktorius
 
 ```cpp
-// Get'eriai — inline, grąžina nuorodas kur įmanoma (be kopijų)
-inline const std::string& vardas() const { return vardas_; }
-inline const std::vector<int>& nd() const { return nd_; }
-inline double galutinisVid() const { return galutinisVid_; }
-
-// Set'erio vaidmenį atlieka konstruktorius ir įvesties metodai
-std::istream& readStudentas(std::istream& is, int ndCount = 0, int lineNumber = 0);
-void parseFromLine(const std::string& line, int ndCount, int lineNumber);
+studentas::~studentas()
+{
+    vardas_.clear();
+    pavarde_.clear();
+    nd_.clear();
+    nd_.shrink_to_fit();      // faktiškai atlaisvina vektoriaus buferį
+    egzaminas_ = 0;
+    galutinisVid_ = 0.0;
+    galutinisMed_ = 0.0;
+    --gyvuObjektu;            // skaitiklis testavimui
+}
 ```
 
-Atskirų `setVardas()` / `setEgzaminas()` metodų sąmoningai **nėra** — objektas kuriamas per konstruktorių arba nuskaitomas iš srauto, todėl visada yra pilnai apibrėžtoje ir validuotoje būsenoje.
+`std::string` ir `std::vector` atlaisvina atmintį patys, todėl techniškai užtektų tuščio kūno. Pilna realizacija pateikta demonstravimo tikslais, o `gyvuObjektu` skaitiklis leidžia teste patikrinti, kad destruktorius **tikrai kviečiamas** kiekvienam objektui.
 
-### `friend` operatoriai
+### 1.2 Kopijavimo konstruktorius
 
 ```cpp
-friend std::istream& operator>>(std::istream& is, studentas& s);
-friend std::ostream& operator<<(std::ostream& os, const studentas& s);
+studentas::studentas(const studentas& other)
+    : vardas_(other.vardas_),
+      pavarde_(other.pavarde_),
+      nd_(other.nd_),
+      egzaminas_(other.egzaminas_),
+      galutinisVid_(other.galutinisVid_),
+      galutinisMed_(other.galutinisMed_)
+{
+    ++gyvuObjektu;
+}
 ```
 
-Jie turi tiesioginę prieigą prie privačių laukų, todėl `printStudentai` ir `writeStudentaiToFile` supaprastėjo iki `std::cout << s << "\n";`.
+Sukuriama **gili kopija** (deep copy) — `std::string` ir `std::vector` kopijuoja savo vidinius buferius, todėl objektai lieka visiškai nepriklausomi. Testas tai patikrina: pakeitus kopiją, originalas nepakinta.
 
-### Ne-nariai lyginimo funkcijos
+### 1.3 Kopijavimo priskyrimo operatorius
 
-Operuoja su `studentas` objektais, bet nėra klasės nariai — naudoja tik viešą interfeisą:
 ```cpp
-bool comparePagalVarda(const studentas& s1, const studentas& s2);
-bool comparePagalPavarde(const studentas& s1, const studentas& s2);
-bool comparePagalEgzamina(const studentas& s1, const studentas& s2);
-bool comparePagalVidurki(const studentas& s1, const studentas& s2);
-bool comparePagalMediana(const studentas& s1, const studentas& s2);
+studentas& studentas::operator=(const studentas& other)
+{
+    if (this == &other)       // apsauga nuo priskyrimo sau
+        return *this;
+
+    vardas_ = other.vardas_;
+    // ... likę laukai ...
+    return *this;             // grąžina *this — veikia grandinė a = b = c
+}
 ```
 
-### Pakeitimai kitame kode
+Patikra `this == &other` būtina: be jos priskyrimas `a = a` galėtų sugadinti duomenis. Grąžinama `*this` nuoroda, kad veiktų grandininis priskyrimas.
 
-| Failas | Kas pakeista |
-|---|---|
-| `main.h` | Pridėtas `#include "studentas.h"`; pašalintos globalios `minPazymys`/`maxPazymys` (dabar klasės konstantos) |
-| `calculate.h` | `sortStudentai` lambda kviečia laisvas `compare*` funkcijas; `splitStudentai`/`partitionStudentai` naudoja `s.galutinisVid()` |
-| `file.h` | `parseStudentasLine` pašalinta — jos vaidmenį perėmė `studentas::parseFromLine` |
-| `generate.h` | Laukų priskyrimą pakeitė pilnas konstruktorius |
-| `print.h` | Naudoja `operator<<` |
-| `enter.cpp` | `enterStudentas` grąžina objektą per konstruktorių; naudoja `studentas::minPazymys` |
-| `calculate.cpp` | **Ištrintas** — `mediana` tapo privačiu klasės metodu |
+### 1.4 Perkėlimo (move) konstruktorius
 
----
+```cpp
+studentas::studentas(studentas&& other) noexcept
+    : vardas_(std::move(other.vardas_)),
+      pavarde_(std::move(other.pavarde_)),
+      nd_(std::move(other.nd_)),
+      egzaminas_(other.egzaminas_),
+      galutinisVid_(other.galutinisVid_),
+      galutinisMed_(other.galutinisMed_)
+{
+    other.egzaminas_ = 0;     // šaltinis paliekamas apibrėžtoje būsenoje
+    other.galutinisVid_ = 0.0;
+    other.galutinisMed_ = 0.0;
+    ++gyvuObjektu;
+}
+```
 
-## `struct` vs `class` spartos palyginimas
+Perimami vidiniai buferiai be kopijavimo. Šaltinio objektas paliekamas **galiojančioje, bet tuščioje** būsenoje — jį saugu naikinti arba priskirti iš naujo.
 
-**Metodika:** fiksuotas konteineris `std::vector`, greičiausia skirstymo strategija (3 strategija — `stable_partition` + blokinis `erase`), failai `studentai100000.txt` ir `studentai1000000.txt`. Kiekvienas matavimas kartotas **2 kartus**, lentelėse — vidurkiai.
+### 1.5 Perkėlimo (move) priskyrimo operatorius
 
-### 100 000 studentų
+```cpp
+studentas& studentas::operator=(studentas&& other) noexcept
+{
+    if (this == &other)
+        return *this;
 
-| Žingsnis | struct `-O1` | class `/O1` | struct `-O2` | class `/O2` |
-|---|---|---|---|---|
-| Failo skaitymas | 0.313628 | **0.275893** | 0.333408 | **0.255890** |
-| Galutinio balo skaičiavimas | 0.0232695 | **0.022625** | 0.0250269 | **0.027367** |
-| Rikiavimas | 0.0317756 | **0.014289** | 0.0264796 | **0.017697** |
-| Skirstymas | **0.024133** | 0.028282 | **0.025452** | 0.038317 |
-| Kietiakai rašymas | 0.094059 | **0.028922** | 0.203233 | **0.033234** |
-| Vargsiukai rašymas | 0.072607 | **0.022236** | 0.157009 | **0.028214** |
-| **Visas testavimas** | 0.563690 | **0.397912** | 0.776818 | **0.407080** |
+    vardas_ = std::move(other.vardas_);
+    // ... likę laukai ...
+    other.egzaminas_ = 0;
+    return *this;
+}
+```
 
-### 1 000 000 studentų
+### Kodėl `noexcept` yra kritiškai svarbus
 
-| Žingsnis | struct `-O1` | class `/O1` | struct `-O2` | class `/O2` |
-|---|---|---|---|---|
-| Failo skaitymas | 3.240460 | **2.811455** | 3.573010 | **2.255440** |
-| Galutinio balo skaičiavimas | 0.314891 | **0.278809** | 0.241921 | **0.225568** |
-| Rikiavimas | 0.518813 | **0.175206** | 0.371181 | **0.154773** |
-| Skirstymas | **0.340469** | 0.367268 | **0.375373** | 0.338150 |
-| Kietiakai rašymas | 1.227502 | **0.331729** | 3.705215 | **1.061501** |
-| Vargsiukai rašymas | 0.878340 | **0.799635** | 2.139240 | **0.674213** |
-| **Visas testavimas** | 6.554700 | **4.771115** | 10.627750 | **4.715710** |
+`std::vector` perskirstymo metu (kai baigiasi `capacity`) turi perkelti visus elementus į naują atminties bloką. Jei move operacija **gali** mesti išimtį, vektorius negalėtų garantuoti stiprios išimčių saugos — pusiau perkelti duomenys būtų prarasti. Todėl `std::vector` naudoja `std::move_if_noexcept`: **be `noexcept` jis rinktųsi kopijavimo konstruktorių**, ir kiekvienas perskirstymas kopijuotų `std::string` ir `std::vector` buferius.
 
-¹ `struct` versijoje skaičiavimas ir rikiavimas nebuvo matuojami atskirai (jie įėjo į bendrą laiką), todėl atskirų reikšmių nėra. Bendro laiko palyginimas nuo to nenukenčia — abi versijos atlieka tą patį darbą.
+Testas tai patikrina statiškai:
+```cpp
+static_assert(std::is_nothrow_move_constructible<studentas>::value);
+static_assert(std::is_nothrow_move_assignable<studentas>::value);
+```
 
-### Bendro laiko santrauka
+### Palyginimas su v1.1
 
-| Duomenų dydis | Optimizavimas | struct | class | **Pagreitėjimas** |
-|---|---|---|---|---|
-| 100 000 | O1 | 0.5637 s | 0.3979 s | **1.42×** |
-| 100 000 | O2 | 0.7768 s | 0.4071 s | **1.91×** |
-| 1 000 000 | O1 | 6.5547 s | 4.7711 s | **1.37×** |
-| 1 000 000 | O2 | 10.6278 s | 4.7157 s | **2.25×** |
-
----
-
-## 4. Optimizavimo flag'ų analizė
-
-### Vykdomojo failo dydis
-
-| Versija | Optimizavimas | `.exe` dydis |
+| | v1.1 | v1.2 |
 |---|---|---|
-| class (MSVC) | `/O1` (Minimize Size) | **120 KB** |
-| class (MSVC) | `/O2` (Maximize Speed) | **160 KB** |
-| struct (MinGW g++) | `-O1` | **371 KB** |
-| struct (MinGW g++) | `-O2` | **336 KB** |
+| Destruktorius | Generuojamas kompiliatoriaus | **Aiškiai apibrėžtas** su pilnu kūnu |
+| Kopijavimo konstruktorius | Generuojamas | **Aiškiai apibrėžtas** |
+| Kopijavimo priskyrimas | Generuojamas | **Aiškiai apibrėžtas** |
+| Move konstruktorius | Generuojamas | **Aiškiai apibrėžtas**, `noexcept` |
+| Move priskyrimas | Generuojamas | **Aiškiai apibrėžtas**, `noexcept` |
+| Taisyklė | Rule of Zero | **Rule of Five** |
 
-### Greitis vs dydis
-
-| Versija | Flag | `.exe` | 100k (s) | 1M (s) |
-|---|---|---|---|---|
-| class | `/O1` | 120 KB | 0.3979 | 4.7711 |
-| class | `/O2` | 160 KB | 0.4071 | **4.7157** |
-| struct | `-O1` | 371 KB | **0.5637** | **6.5547** |
-| struct | `-O2` | 336 KB | 0.7768 | 10.6278 |
+Svarbu suprasti pasekmę: v1.1 laikėsi Rule of Zero, ir kompiliatorius generavo visas penkias funkcijas. Vos tik v1.2 aiškiai deklaravome destruktorių, **kompiliatorius nustojo generuoti move operacijas** — jei jų nebūtume parašę rankiniu būdu, klasė būtų grįžusi prie kopijavimo, ir `std::sort` su 1M studentų sulėtėtų kelis kartus. Būtent todėl Rule of Five yra „viskas arba nieko" taisyklė.
 
 ---
 
-## 5. Rezultatų komentarai
+## 2. Perdengti operatoriai
 
-### Kodėl `class` versija greitesnė
+### 2.1 Įvesties ir išvesties operatoriai
 
-Pagrindinis pagreitėjimas ateina **ne iš `class` vietoj `struct`** — pats perėjimas prie klasės spartos nekeičia, nes get'eriai yra `inline` ir kompiliatorius juos visiškai pašalina. Skirtumą lemia trys dalykai, kuriuos klasės realizacija padarė įmanomus arba natūraliais:
+| Operatorius | Paskirtis |
+|---|---|
+| `friend std::istream& operator>>(std::istream&, studentas&)` | Nuskaito studentą iš bet kokio įvesties srauto |
+| `friend std::ostream& operator<<(std::ostream&, const studentas&)` | Išveda studentą į bet kokį išvesties srautą |
 
-1. **Rašymo optimizacija** (didžiausias efektas). `class` versija su 1M studentų kietiakų failą rašo per 0.33 s (`/O1`), o `struct` — per 1.23 s (`-O1`) ir net 3.71 s (`-O2`). Priežastis — `appendListTo` su `std::to_chars` ir 1 MB buferiu vietoj `std::setw` manipuliatorių ir atskirų `<<` operacijų kiekvienam iš 16 laukų × 1M eilučių.
+Abu paskelbti `friend`, nes jiems reikia prieigos prie privačių laukų, o pirmasis argumentas yra srautas, ne `studentas` — todėl jie negali būti klasės nariai.
 
-2. **Skaitymo optimizacija.** `parseFromLine` su `std::from_chars` vietoj `std::istringstream` + `operator>>`. Su 1M studentų × 16 skaičių tai ~16M parsinimo operacijų be locale ir stream būsenos apdorojimo.
+**Kodėl tai svarbu naudotojui.** `std::istream` ir `std::ostream` yra bazinės klasės, todėl tie patys operatoriai veikia su:
 
-3. **Move semantika.** Rule of Zero užtikrina, kad `std::sort` ir `stable_partition` perkelia objektus, o ne kopijuoja.
+| Srauto tipas | Panaudojimas |
+|---|---|
+| `std::cin` / `std::cout` | Interaktyvi įvestis ir išvestis į ekraną |
+| `std::ifstream` / `std::ofstream` | Skaitymas ir rašymas į failą |
+| `std::istringstream` / `std::ostringstream` | Darbas su eilutėmis atmintyje, testavimas |
+
+```cpp
+studentas s;
+std::cin >> s;                    // iš klaviatūros
+std::cout << s << "\n";           // į ekraną
+
+std::ifstream f("studentai.txt");
+f >> s;                           // iš failo
+
+std::istringstream iss("Jonas Jonaitis 8 9 10 7");
+iss >> s;                         // iš eilutės (naudojama testuose)
+```
+
+### 2.2 Duomenų įvesties būdai
+
+Klasė palaiko **tris** įvesties būdus, kiekvienas su savo metodu:
+
+| Būdas | Metodas | Kur naudojama |
+|---|---|---|
+| **Rankinis** (klaviatūra) | `operator>>` → `readStudentas(is)` | Meniu punktas 1 |
+| **Automatinis** (generavimas) | Pilnas konstruktorius `studentas(vardas, pavarde, nd, egzaminas)` | Meniu punktai 2, 3, 5 |
+| **Iš failo** | `parseFromLine(line, ndCount, lineNumber)` | Meniu punktas 4 |
+
+**Kodėl failo skaitymui atskiras metodas.** `operator>>` naudoja `std::istringstream` ir `operator>>` skaičiams — su 10M studentų tai reiškia 10M srauto objektų konstravimų ir ~160M parsinimo operacijų su locale bei stream būsenos apdorojimu. `parseFromLine` dirba tiesiogiai su `const std::string&` ir naudoja `std::from_chars` (C++17), kuris parsina skaičių be jokio srauto mechanizmo.
+
+```cpp
+// Lėtas kelias (bet universalus):
+std::istringstream ss(line);
+studentas s;
+ss >> s;
+
+// Greitas kelias (failo skaitymui):
+studentas s;
+s.parseFromLine(line, ndCount, lineNumber);
+```
+
+### 2.3 Duomenų išvesties būdai
+
+| Būdas | Metodas | Kur naudojama |
+|---|---|---|
+| **Į ekraną** | `operator<<` | `printStudentai` (meniu → konsolė) |
+| **Į failą** (galutiniai balai) | `operator<<` | `writeStudentaiToFile` |
+| **Į failą** (pilnas įrašas) | `appendListTo(std::string& out)` | `writeStudentaiListToFile` |
+
+`appendListTo` nerašo į srautą — jis **prideda** suformatuotą eilutę į bendrą `std::string` buferį naudodamas `std::to_chars`. Failo rašymo funkcija kaupia eilutes, kol buferis pasiekia ~1 MB, tada iškviečia vieną `file.write()`. Taip vietoj 16M atskirų `<<` operacijų gaunama ~40 blokinių rašymų.
+
+Buferis **neauga** proporcingai studentų skaičiui — `out.clear()` išlaiko `capacity`, todėl per visą rašymą nėra nė vienos naujos alokacijos.
+
+### 2.4 Papildomi operatoriai būsimiems naudotojams
+
+Šie operatoriai programoje nenaudojami, bet realizuoti, nes klasė gali būti naudojama kitur:
+
+| Operatorius | Realizacija | Kam gali prireikti |
+|---|---|---|
+| `operator==` | Lygina vardą, pavardę, ND ir egzaminą | `std::find`, `std::unique`, `std::count` |
+| `operator!=` | `!(*this == other)` | Sąlygos, algoritmai |
+| `operator<` | Pagal pavardę, esant vienodoms — pagal vardą | `std::sort` be komparatoriaus, `std::set`, `std::map` |
+| `operator>` | `other < *this` | Mažėjantis rikiavimas |
+| `operator[]` | ND pažymys pagal indeksą, meta `std::out_of_range` | Patogi prieiga prie konkretaus darbo |
+| `explicit operator bool` | Ar objektas turi vardą ir pavardę | `if (s) { ... }` patikros |
+
+`operator bool` pažymėtas `explicit`, kad neįvyktų netyčinis konvertavimas į `int` — pvz. `s + 1` nesikompiliuos, kaip ir turi būti.
 
 ---
 
-## Failų struktūra
+## 3. Klasės metodų testas
+
+Testas realizuotas `testStudentas.h` / `testStudentas.cpp` ir iškviečiamas iš meniu **punktu 9**.
+
+### Testavimo algoritmas
+
+Naudojama paprasta `tikrink(sąlyga, aprašymas)` funkcija, kuri išveda `[ OK ]` arba `[KLAIDA]` ir skaičiuoja rezultatus. Kiekvienas testų skyrius tikrina vieną klasės aspektą.
+
+### Testų apimtis
+
+| Nr. | Skyrius | Ką tikrina |
+|---|---|---|
+| 1 | Numatytasis konstruktorius | Visi laukai inicijuoti nuliais / tuščiomis reikšmėmis |
+| 2 | Pilnas konstruktorius | Duomenys išsaugoti teisingai |
+| 3 | Pilnas konstruktorius — validacija | Meta `invalid_argument` tuščiam vardui, `runtime_error` blogiems pažymiams |
+| 4 | Konstruktorius iš srauto | Nuskaito iš `std::istringstream` |
+| 5 | **Kopijavimo konstruktorius** | Visi laukai nukopijuoti; pakeitus kopiją originalas **nepakinta** (deep copy) |
+| 6 | **Kopijavimo priskyrimas** | Priskyrimas veikia; `a = a` nesugadina; `c = d = a` grandinė veikia |
+| 7 | **Move konstruktorius** | Duomenys perkelti; šaltinis liko tuščias ir galiojantis |
+| 8 | **Move priskyrimas** | Duomenys perkelti; `x = std::move(x)` nesukelia lūžimo |
+| 9 | `noexcept` patikra | `is_nothrow_move_constructible` ir `is_nothrow_move_assignable` |
+| 10 | **Destruktorius** | Objektų skaitiklis padidėja kuriant ir grįžta į pradinį išėjus iš bloko |
+| 11 | **`operator>>`** | Nuskaito vardą, pavardę, ND ir egzaminą |
+| 12 | **`operator<<`** | Išvestyje yra vardas, pavardė ir teisingas galutinis balas |
+| 13 | **Įvestis iš failo** (`parseFromLine`) | Parsina teisingai; meta klaidas blogiems duomenims |
+| 14 | **Išvestis į failą** (`appendListTo`) | Formatas teisingas; **round-trip** — išvesta eilutė nuskaitoma atgal |
+| 15 | `operator==`, `operator!=` | Vienodi lygūs, skirtingi nelygūs |
+| 16 | `operator<`, `operator>` | Rikiavimas pagal pavardę; veikia su `std::sort` |
+| 17 | `operator[]` | Grąžina teisingą pažymį; meta `out_of_range` |
+| 18 | `calculateGalutinis` | Vidurkis, mediana (lyginiam ir nelyginiam kiekiui), tuščias ND sąrašas |
+| 19 | Set'eriai ir `isvalyk` | Reikšmės nustatomos; validacija veikia; objektas ištuštinamas |
+| 20 | Veikimas konteineriuose | Duomenys išlieka po `vector` perskirstymo ir po `std::move` |
+
+### Įdomiausi testai
+
+**Deep copy patikra** (5 skyrius) — pakeičiama kopija ir tikrinama, ar originalas nepakito:
+```cpp
+studentas kopija(originalas);
+kopija.setVardas("Pakeistas");
+tikrink(originalas.vardas() == "Jonas",
+    "originalas NEPAKISTA, kai keiciama kopija (deep copy)");
+```
+
+**Destruktoriaus patikra** (10 skyrius) — naudojamas statinis skaitiklis:
+```cpp
+const int priesBloka = studentas::gyvuObjektu;
+{
+    studentas a = kurkTestini();
+    studentas b = kurkTestini();
+    studentas c(a);
+    tikrink(studentas::gyvuObjektu == priesBloka + 3, "sukurti 3 objektai");
+}
+tikrink(studentas::gyvuObjektu == priesBloka, "destruktorius sumazino skaitikli");
+```
+
+**Round-trip patikra** (14 skyrius) — svarbiausias I/O testas: išvedus studentą į buferį ir nuskaičius atgal, objektas turi būti identiškas:
+```cpp
+std::string buferis;
+s.appendListTo(buferis);
+
+studentas s2;
+s2.parseFromLine(buferis, 3, 1);
+tikrink(s2.vardas() == s.vardas() && s2.nd() == s.nd() &&
+        s2.egzaminas() == s.egzaminas(),
+    "isvesta eilute korektiskai nuskaitoma atgal (round-trip)");
+```
+
+Šis testas garantuoja, kad `writeStudentaiListToFile` sukurtas failas bus teisingai nuskaitytas `readStudentaiFromFile`.
+
+**Objektų nutekėjimo patikra** — testo pabaigoje lyginamas `gyvuObjektu` skaitiklis prieš ir po visų testų. Jei skaičiai nesutampa, kažkur liko nesunaikintų objektų.
+
+### Testo išvestis
+
+![Klasės testo rezultatai](docs/testai_1.png)
+*1 pav. Klasės metodų testo išvestis — konstruktoriai ir Rule of Five*
+
+![Klasės testo rezultatai](docs/testai_2.png)
+*2 pav. Klasės metodų testo išvestis — I/O operatoriai ir papildomi operatoriai*
+
+![Testo santrauka](docs/testai_santrauka.png)
+*3 pav. Testo rezultatų santrauka su objektų nutekėjimo patikra*
+
+---
+
+## 4. Failų struktūra
 
 ```
 .
 ├── CMakeLists.txt
 ├── LICENSE
 ├── README.md
-├── data/                       # Testiniai failai (archyvas)
+├── docs/                           # Ekrano kopijos
+├── data/                           # Testiniai failai
 │   ├── studentai1000.txt
 │   ├── studentai10000.txt
 │   ├── studentai100000.txt
 │   ├── studentai1000000.txt
 │   └── studentai10000000.txt
-├── studentas.h / studentas.cpp # class studentas — duomenys, skaičiavimas, I/O
-├── main.h                      # splitResult<T>, konstantos, funkcijų deklaracijos
-├── OOP_2.cpp                   # main() + runProgram<Container>() šablonas
-├── menu.h / menu.cpp           # Meniu ir pasirinkimų funkcijos
-├── enter.h / enter.cpp         # Rankinio įvedimo funkcijos
-├── generate.h / generate.cpp   # Generavimo funkcijos
-├── file.h / file.cpp           # Failo skaitymo ir rašymo šablonai
-├── calculate.h                 # calculateGalutinis<T>, sortStudentai<T>, splitStudentai<T>
-├── output.h                    # outputStudentai<T>
-├── print.h / print.cpp         # Spausdinimo funkcijos
-└── test.h / test.cpp           # Spartos testavimo funkcijos
+├── studentas.h / studentas.cpp     # class studentas — Rule of Five, operatoriai, I/O
+├── testStudentas.h / .cpp          # Klasės metodų testas (v1.2)
+├── main.h                          # splitResult<T>, funkcijų deklaracijos
+├── OOP_2.cpp                       # main() + runProgram<Container>()
+├── menu.h / menu.cpp               # Meniu funkcijos
+├── enter.h / enter.cpp             # Rankinio įvedimo funkcijos
+├── generate.h / generate.cpp       # Generavimo funkcijos
+├── file.h / file.cpp               # Failo skaitymo ir rašymo šablonai
+├── calculate.h                     # calculateGalutinis<T>, sortStudentai<T>, splitStudentai<T>
+├── output.h                        # outputStudentai<T>
+├── print.h / print.cpp             # Spausdinimo funkcijos
+└── test.h / test.cpp               # Spartos testavimo funkcijos
 ```
 
 ---
 
-## Naudojimosi instrukcija
+## 5. Naudojimosi instrukcija
 
 ### Paleidimas
 
@@ -256,8 +362,6 @@ Pasirinkite konteinerį:
 3. deque
 ```
 
-Pasirinkimas galioja visai sesijai.
-
 ### Meniu pasirinkimai
 
 | Nr. | Veiksmas |
@@ -267,9 +371,10 @@ Pasirinkimas galioja visai sesijai.
 | 3 | Generuoti studentus automatiškai |
 | 4 | Nuskaityti iš failo |
 | 5 | Generuoti testinį studentų failą |
-| 6 | Spartos testas — failų kūrimas (1 tyrimas) |
-| 7 | Spartos testas — duomenų apdorojimas (2 tyrimas) |
-| 8 | Spartos testas — konteinerių palyginimas (3 tyrimas) |
+| 6 | Spartos testas — failų kūrimas |
+| 7 | Spartos testas — duomenų apdorojimas |
+| 8 | Spartos testas — konteinerių palyginimas |
+| **9** | **Klasės `studentas` metodų testavimas** *(nauja v1.2)* |
 | 0 | Baigti |
 
 ### Failo formatas
@@ -283,7 +388,7 @@ Antraštė naudojama automatiškai nustatyti namų darbų stulpelių skaičių p
 
 ---
 
-## Įdiegimo instrukcija
+## 6. Įdiegimo instrukcija
 
 ### Reikalavimai
 - C++17 palaikantis kompiliatorius (MSVC 2019+, g++ 8+, clang++ 7+)
@@ -300,21 +405,19 @@ cmake --build . --config Release
 ### g++ tiesiogiai
 
 ```bash
-g++ -std=c++17 -O2 -Wall OOP_2.cpp studentas.cpp menu.cpp enter.cpp generate.cpp file.cpp print.cpp test.cpp -o programa.exe
+g++ -std=c++17 -O2 -Wall OOP_2.cpp studentas.cpp testStudentas.cpp menu.cpp enter.cpp generate.cpp file.cpp print.cpp test.cpp -o programa.exe
 ```
 
 ---
 
-## Pakeitimai v1.0 → v1.1
+## 7. Pakeitimai v1.1 → v1.2
 
-- `struct studentas` pakeista į `class studentas` su privačiais laukais (`vardas_`, `pavarde_`, `nd_`, ...) ir viešu interfeisu
-- Realizuoti trys konstruktoriai: numatytasis, pilnas (su validacija) ir iš `std::istream`
-- Destruktorius, kopijavimo ir perkėlimo operacijos paliktos kompiliatoriui (**Rule of Zero**) — taip išsaugoma move semantika, kritinė `std::sort` spartai
-- Pridėti `inline` get'eriai, grąžinantys `const` nuorodas (be kopijų)
-- `friend operator>>` ir `friend operator<<` — I/O per srautus
-- Penkios ne-nariai `compare*` funkcijos rikiavimui
-- Konstantos (`minPazymys`, `maxPazymys`, svoriai) perkeltos į klasę kaip `static constexpr`
-- `calculate.cpp` ištrintas — `mediana` tapo privačiu klasės metodu
-- I/O optimizacija: `std::from_chars` skaitymui, `std::to_chars` + buferis rašymui
-- Klaidų pranešimai formuojami tik metant išimtį (anksčiau — kiekvienam pažymiui)
-- Atliktas `struct` vs `class` ir `O1` vs `O2` spartos bei `.exe` dydžio tyrimas
+- Realizuota **pilna Rule of Five**: destruktorius, kopijavimo konstruktorius, kopijavimo priskyrimas, move konstruktorius (`noexcept`), move priskyrimas (`noexcept`) — visi su pilnais kūnais, ne `= default`
+- Abi kopijavimo/perkėlimo priskyrimo operacijos turi **apsaugą nuo priskyrimo sau** (`this == &other`)
+- Pridėtas statinis `gyvuObjektu` skaitiklis — leidžia testuose patikrinti destruktoriaus veikimą ir objektų nutekėjimą
+- Perdengti papildomi operatoriai: `==`, `!=`, `<`, `>`, `[]`, `explicit operator bool`
+- Pridėti individualūs set'eriai (`setVardas`, `setPavarde`, `setNd`, `setEgzaminas`, `addPazymys`) su validacija ir `isvalyk()` metodas
+- Sukurtas `testStudentas.h` / `testStudentas.cpp` — **20 testų skyrių**, apimančių visus konstruktorius, visus penkis Rule of Five metodus, įvesties/išvesties operatorius ir papildomus operatorius
+- Meniu papildytas **9 punktu** — klasės metodų testavimas
+- Testuose realizuota **round-trip patikra**: išvesta eilutė nuskaitoma atgal ir lyginama su originalu
+- Testuose realizuota **objektų nutekėjimo patikra** — skaitiklis prieš ir po visų testų
