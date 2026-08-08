@@ -24,6 +24,29 @@ double studentas::mediana(const std::vector<int>& nd) {
 }
 
 // -------------------------------------------------------
+// Vidinės pagalbinės funkcijos (tik šiam failui)
+// -------------------------------------------------------
+
+namespace {
+
+	// Klaidos pranešimo pradžia — kuriama TIK metant išimtį
+	inline std::string vietosTekstas(int lineNumber) {
+		return (lineNumber > 0)
+			? "Eilutėje " + std::to_string(lineNumber)
+			: std::string("Įvestyje");
+	}
+
+	inline std::string ribuKlaida(int lineNumber, const char* ko, int p) {
+		return vietosTekstas(lineNumber) + " " + ko + " pažymys už ribų ("
+			+ std::to_string(studentas::minPazymys) + "-"
+			+ std::to_string(studentas::maxPazymys) + "): "
+			+ std::to_string(p);
+	}
+
+} // anoniminis namespace
+
+
+// -------------------------------------------------------
 // Konstruktoriai
 // -------------------------------------------------------
 
@@ -64,19 +87,108 @@ void studentas::calculateGalutinis() {
 }
 
 // -------------------------------------------------------
+// parseFromLine — GREITAS parsinimas failo skaitymui
+//
+// Neturi std::istringstream (nekuriamas objektas kiekvienai eilutei)
+// ir naudoja std::from_chars vietoj operator>> — be locale,
+// be stream sentry, be būsenos tikrinimo.
+// -------------------------------------------------------
+
+void studentas::parseFromLine(const std::string& line, int ndCount, int lineNumber)
+{
+	const char* p = line.data();
+	const char* end = p + line.size();
+
+	auto skipSpace = [&]() {
+		while (p < end && (*p == ' ' || *p == '\t' || *p == '\r')) ++p;
+		};
+
+	// --- Vardas ---
+	skipSpace();
+	const char* start = p;
+	while (p < end && *p != ' ' && *p != '\t' && *p != '\r') ++p;
+	if (start == p)
+		throw std::runtime_error(vietosTekstas(lineNumber) + " trūksta vardo.");
+	vardas_.assign(start, p - start);
+
+	// --- Pavardė ---
+	skipSpace();
+	start = p;
+	while (p < end && *p != ' ' && *p != '\t' && *p != '\r') ++p;
+	if (start == p)
+		throw std::runtime_error(vietosTekstas(lineNumber) + " trūksta pavardės.");
+	pavarde_.assign(start, p - start);
+
+	// --- Pažymiai ---
+	auto readInt = [&](const char* ko) -> int {
+		skipSpace();
+		int v = 0;
+		auto res = std::from_chars(p, end, v);
+		if (res.ec != std::errc())
+			throw std::runtime_error(vietosTekstas(lineNumber)
+				+ " trūksta " + ko + " pažymio.");
+		p = res.ptr;
+		return v;
+		};
+
+	nd_.clear();
+	nd_.reserve(ndCount);
+
+	for (int i = 0; i < ndCount; ++i) {
+		int v = readInt("namų darbo");
+		if (!pazymysTinkamas(v))
+			throw std::runtime_error(ribuKlaida(lineNumber, "namų darbo", v));
+		nd_.push_back(v);
+	}
+
+	egzaminas_ = readInt("egzamino");
+	if (!pazymysTinkamas(egzaminas_))
+		throw std::runtime_error(ribuKlaida(lineNumber, "egzamino", egzaminas_));
+}
+
+// -------------------------------------------------------
+// appendListTo — GREITAS formatavimas failo rašymui
+//
+// Rašoma tiesiai į bendrą std::string buferį naudojant
+// std::to_chars — be std::setw manipuliatorių ir be atskirų
+// << operacijų į srautą kiekvienam laukui.
+// -------------------------------------------------------
+
+void studentas::appendListTo(std::string& out) const
+{
+	// Vardas — kairinis lygiavimas plotyje 25
+	out.append(vardas_);
+	if (vardas_.size() < 25) out.append(25 - vardas_.size(), ' ');
+
+	// Pavardė — kairinis lygiavimas plotyje 25
+	out.append(pavarde_);
+	if (pavarde_.size() < 25) out.append(25 - pavarde_.size(), ' ');
+
+	// Skaičius — dešininis lygiavimas plotyje 10
+	char buf[16];
+	auto appendInt = [&](int v) {
+		auto res = std::to_chars(buf, buf + sizeof(buf), v);
+		size_t len = static_cast<size_t>(res.ptr - buf);
+		if (len < 10) out.append(10 - len, ' ');
+		out.append(buf, len);
+		};
+
+	for (int nd : nd_)
+		appendInt(nd);
+	appendInt(egzaminas_);
+
+	out.push_back('\n');
+}
+
+
+// -------------------------------------------------------
 // Įvestis iš srauto
 // -------------------------------------------------------
 
 std::istream& studentas::readStudentas(std::istream& is, int ndCount, int lineNumber) {
-	// vieta NEkuriama iš anksto — tik prireikus
-	auto vieta = [lineNumber]() -> std::string {
-		return (lineNumber > 0)
-			? "Eilutėje " + std::to_string(lineNumber)
-			: std::string("Įvestyje");
-		};
-
 	if (!(is >> vardas_ >> pavarde_))
-		throw std::runtime_error(vieta() + " trūksta vardo arba pavardės.");
+		throw std::runtime_error(vietosTekstas(lineNumber)
+			+ " trūksta vardo arba pavardės.");
 
 	nd_.clear();
 
@@ -85,41 +197,39 @@ std::istream& studentas::readStudentas(std::istream& is, int ndCount, int lineNu
 		for (int i = 0; i < ndCount; ++i) {
 			int p;
 			if (!(is >> p))
-				throw std::runtime_error(vieta() + " trūksta namų darbo pažymio.");
-
-			// Patikra be jokio string kūrimo
+				throw std::runtime_error(vietosTekstas(lineNumber)
+					+ " trūksta namų darbo pažymio.");
 			if (!pazymysTinkamas(p))
-				throw std::runtime_error(vieta() + " namų darbo pažymys už ribų ("
-					+ std::to_string(minPazymys) + "-" + std::to_string(maxPazymys)
-					+ "): " + std::to_string(p));
-
+				throw std::runtime_error(ribuKlaida(lineNumber, "namų darbo", p));
 			nd_.push_back(p);
 		}
 		if (!(is >> egzaminas_))
-			throw std::runtime_error(vieta() + " trūksta egzamino pažymio.");
+			throw std::runtime_error(vietosTekstas(lineNumber)
+				+ " trūksta egzamino pažymio.");
 	}
 	else {
+		// Nežinomas skaičius — skaitome iki galo, paskutinis yra egzaminas
 		int p;
 		while (is >> p) {
 			if (!pazymysTinkamas(p))
-				throw std::runtime_error(vieta() + " namų darbo pažymys už ribų: "
-					+ std::to_string(p));
+				throw std::runtime_error(ribuKlaida(lineNumber, "namų darbo", p));
 			nd_.push_back(p);
 		}
 		if (nd_.empty())
-			throw std::runtime_error(vieta() + " trūksta egzamino pažymio.");
+			throw std::runtime_error(vietosTekstas(lineNumber)
+				+ " trūksta egzamino pažymio.");
 
 		egzaminas_ = nd_.back();
 		nd_.pop_back();
-		is.clear();
+		is.clear();   // eilutės pabaiga nėra klaida šiame režime
 	}
 
 	if (!pazymysTinkamas(egzaminas_))
-		throw std::runtime_error(vieta() + " egzamino pažymys už ribų: "
-			+ std::to_string(egzaminas_));
+		throw std::runtime_error(ribuKlaida(lineNumber, "egzamino", egzaminas_));
 
 	return is;
 }
+
 
 // -------------------------------------------------------
 // friend operatoriai

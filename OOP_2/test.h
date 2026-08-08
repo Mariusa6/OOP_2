@@ -47,32 +47,43 @@ void testData(int n)
     std::chrono::duration<double> elapsed = end - start;
     std::cout << n << u8" failo skaitymas užtruko: " << elapsed.count() << u8" sekundžių.\n";
 
+	auto start2 = std::chrono::high_resolution_clock::now();
     calculateGalutinis(studentai);
+	auto end2 = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed2 = end2 - start2;
+	std::cout << n << u8" galutinio balo skaičiavimas užtruko: "
+		<< elapsed2.count() << u8" sekundžių.\n";
+
+	auto start3 = std::chrono::high_resolution_clock::now();
     sortStudentai(studentai, '4');
-
-    auto start2 = std::chrono::high_resolution_clock::now();
-    splitResult<Container> result = splitStudentai<Container>(studentai);
-    auto end2 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed2 = end2 - start2;
-    std::cout << n << u8" skirstymas į kietiakai ir vargsiukai užtruko: "
-        << elapsed2.count() << u8" sekundžių.\n";
-
-    auto start3 = std::chrono::high_resolution_clock::now();
-    writeStudentaiListToFile<Container>(result.kietiakai, "testkietiakai" + std::to_string(n) + ".txt");
-    auto end3 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed3 = end3 - start3;
-    std::cout << n << u8" Kietiakai failo generavimas užtruko: "
-        << elapsed3.count() << u8" sekundžių.\n";
+	auto end3 = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed3 = end3 - start3;
+	std::cout << n << u8" rikiavimas pagal medianą užtruko: "
+		<< elapsed3.count() << u8" sekundžių.\n";
 
     auto start4 = std::chrono::high_resolution_clock::now();
-    writeStudentaiListToFile<Container>(result.vargsiukai, "testvargsiukai" + std::to_string(n) + ".txt");
+    splitResult<Container> result = splitStudentai<Container>(studentai);
     auto end4 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed4 = end4 - start4;
+    std::cout << n << u8" skirstymas į kietiakai ir vargsiukai užtruko: "
+        << elapsed4.count() << u8" sekundžių.\n";
+
+    auto start5 = std::chrono::high_resolution_clock::now();
+    writeStudentaiListToFile<Container>(result.kietiakai, "testkietiakai" + std::to_string(n) + ".txt");
+    auto end5 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed5 = end5 - start5;
+    std::cout << n << u8" Kietiakai failo generavimas užtruko: "
+        << elapsed5.count() << u8" sekundžių.\n";
+
+    auto start6 = std::chrono::high_resolution_clock::now();
+    writeStudentaiListToFile<Container>(result.vargsiukai, "testvargsiukai" + std::to_string(n) + ".txt");
+    auto end6 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed6 = end6 - start6;
 
     auto endTotal = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsedTotal = endTotal - startTotal;
     std::cout << n << u8" Vargsiukai failo generavimas užtruko: "
-        << elapsed4.count() << u8" sekundžių.\n";
+        << elapsed6.count() << u8" sekundžių.\n";
     std::cout << n << u8" Visas testavimas užtruko: "
         << elapsedTotal.count() << u8" sekundžių.\n\n";
 }

@@ -78,11 +78,8 @@ void runProgram()
             testGenerateStudentai<Container>(10000000);
             break;
         case '7':
-            testData<Container>(1000);
-            testData<Container>(10000);
             testData<Container>(100000);
             testData<Container>(1000000);
-            testData<Container>(10000000);
             break;
         case '8':
             testContainers(1000);
