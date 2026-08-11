@@ -11,8 +11,9 @@
 #include <list>         // list
 #include <deque>        // deque
 #include <exception>    // exception
-#include <type_traits>  // is_nothrow_move_constructible
-#include "studentas.h"  // class studentas
+#include <type_traits>  // is_abstract, is_base_of, is_nothrow_move_constructible
+#include "zmogus.h"     // abstrakti bazinė klasė
+#include "studentas.h"  // išvestinė klasė
 
 #define NUMBER_OF_PAZYMYS 15
 
@@ -58,7 +59,7 @@ std::string enterOutputFileName(std::string desc = "išvesties");
 
 // Test functions
 void testContainers(int n);
-bool testStudentasKlase();      // klasės metodų testas (v1.2)
+bool testStudentasKlase();      // klasių metodų testas (v1.2 / v1.5)
 
 // Utility functions
 bool isAllLetters(const std::string& input);
