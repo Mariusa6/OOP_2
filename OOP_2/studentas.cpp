@@ -1,9 +1,9 @@
 #include "studentas.h"
 
 // -------------------------------------------------------
-// Statinis narys — gyvuojančių objektų skaitiklis
+// Statinis narys
 // -------------------------------------------------------
-int studentas::gyvuObjektu = 0;
+int studentas::gyvuStudentu = 0;
 
 // -------------------------------------------------------
 // Privatūs pagalbiniai metodai
@@ -34,7 +34,6 @@ double studentas::mediana(const std::vector<int>& nd) {
 
 namespace {
 
-    // Klaidos pranešimo pradžia — kuriama TIK metant išimtį
     inline std::string vietosTekstas(int lineNumber) {
         return (lineNumber > 0)
             ? "Eilutėje " + std::to_string(lineNumber)
@@ -52,91 +51,106 @@ namespace {
 
 // =======================================================
 // 1. KONSTRUKTORIAI
+//
+// Kiekvienas kviečia atitinkamą BAZINĖS klasės konstruktorių
+// per member initializer list — zmogus() arba zmogus(v, p).
+// Kūrimo tvarka: zmogus konstruktorius → studentas konstruktorius
 // =======================================================
 
-// Numatytasis konstruktorius
 studentas::studentas()
-    : vardas_(), pavarde_(), nd_(),
-    egzaminas_(0), galutinisVid_(0.0), galutinisMed_(0.0)
+    : zmogus(),                          // bazinės klasės konstruktorius
+    nd_(), egzaminas_(0),
+    galutinisVid_(0.0), galutinisMed_(0.0)
 {
-    ++gyvuObjektu;
+    ++gyvuStudentu;
 }
 
-// Pilnas konstruktorius — su validacija
 studentas::studentas(const std::string& vardas,
     const std::string& pavarde,
     const std::vector<int>& nd,
     int egzaminas)
-    : vardas_(vardas), pavarde_(pavarde), nd_(nd), egzaminas_(egzaminas),
+    : zmogus(vardas, pavarde),           // bazinė validuoja vardą ir pavardę
+    nd_(nd), egzaminas_(egzaminas),
     galutinisVid_(0.0), galutinisMed_(0.0)
 {
-    if (vardas_.empty())
-        throw std::invalid_argument("Vardas negali būti tuščias");
-    if (pavarde_.empty())
-        throw std::invalid_argument("Pavardė negali būti tuščia");
-
+    // Studentui specifinė validacija
     for (int p : nd_)
         if (!pazymysTinkamas(p))
             throw std::runtime_error("Namų darbo pažymys už ribų: " + std::to_string(p));
     if (!pazymysTinkamas(egzaminas_))
         throw std::runtime_error("Egzamino pažymys už ribų: " + std::to_string(egzaminas_));
 
-    ++gyvuObjektu;
+    ++gyvuStudentu;
 }
 
-// Konstruktorius iš srauto
 studentas::studentas(std::istream& is)
-    : vardas_(), pavarde_(), nd_(),
-    egzaminas_(0), galutinisVid_(0.0), galutinisMed_(0.0)
+    : zmogus(),
+    nd_(), egzaminas_(0),
+    galutinisVid_(0.0), galutinisMed_(0.0)
 {
-    ++gyvuObjektu;
+    ++gyvuStudentu;
     readStudentas(is);
 }
 
 // =======================================================
-// 2. RULE OF FIVE — pilnos realizacijos
+// 2. RULE OF FIVE
+//
+// Visos penkios funkcijos kviečia atitinkamas BAZINĖS klasės
+// funkcijas — kitaip vardas_ ir pavarde_ nebūtų nukopijuoti
+// arba perkelti (dažna klaida paveldėjime!).
 // =======================================================
 
 // -------------------------------------------------------
-// 2.1 DESTRUKTORIUS
+// 2.1 DESTRUKTORIUS (override)
+//
+// Naikinimo tvarka atvirkštinė kūrimui:
+//   ~studentas() → ~zmogus()
+// Bazinės klasės destruktorius kviečiamas AUTOMATIŠKAI —
+// jo rankiniu būdu kviesti nereikia ir negalima.
 // -------------------------------------------------------
 studentas::~studentas()
 {
-    vardas_.clear();
-    pavarde_.clear();
     nd_.clear();
-    nd_.shrink_to_fit();      // faktiškai atlaisvina vektoriaus buferį
+    nd_.shrink_to_fit();
     egzaminas_ = 0;
     galutinisVid_ = 0.0;
     galutinisMed_ = 0.0;
 
-    --gyvuObjektu;
+    --gyvuStudentu;
+    // ~zmogus() iškviečiamas automatiškai po šio kūno
 }
 
 // -------------------------------------------------------
 // 2.2 KOPIJAVIMO KONSTRUKTORIUS
+//
+// zmogus(other) — bazinės dalies kopijavimas.
+// Be šio kvietimo būtų iškviestas zmogus() numatytasis
+// konstruktorius, ir vardas_/pavarde_ liktų tušti.
 // -------------------------------------------------------
 studentas::studentas(const studentas& other)
-    : vardas_(other.vardas_),
-    pavarde_(other.pavarde_),
+    : zmogus(other),                     // bazinės dalies kopija
     nd_(other.nd_),
     egzaminas_(other.egzaminas_),
     galutinisVid_(other.galutinisVid_),
     galutinisMed_(other.galutinisMed_)
 {
-    ++gyvuObjektu;
+    ++gyvuStudentu;
 }
 
 // -------------------------------------------------------
 // 2.3 KOPIJAVIMO PRISKYRIMO OPERATORIUS
+//
+// zmogus::operator=(other) — bazinės dalies priskyrimas.
+// Kvalifikuotas kvietimas būtinas, nes be jo įvyktų
+// begalinė rekursija (kviestų save patį).
 // -------------------------------------------------------
 studentas& studentas::operator=(const studentas& other)
 {
-    if (this == &other)       // apsauga nuo priskyrimo sau
+    if (this == &other)                  // apsauga nuo priskyrimo sau
         return *this;
 
-    vardas_ = other.vardas_;
-    pavarde_ = other.pavarde_;
+    zmogus::operator=(other);            // bazinės dalies priskyrimas
+
     nd_ = other.nd_;
     egzaminas_ = other.egzaminas_;
     galutinisVid_ = other.galutinisVid_;
@@ -147,21 +161,27 @@ studentas& studentas::operator=(const studentas& other)
 
 // -------------------------------------------------------
 // 2.4 PERKĖLIMO (MOVE) KONSTRUKTORIUS
+//
+// std::move(other) būtinas: other yra pavadintas kintamasis,
+// todėl pats savaime yra lvalue — be std::move būtų iškviestas
+// zmogus KOPIJAVIMO, ne perkėlimo konstruktorius.
+//
+// noexcept — kad std::vector perskirstymo metu naudotų
+// perkėlimą, ne kopijavimą (std::move_if_noexcept).
 // -------------------------------------------------------
 studentas::studentas(studentas&& other) noexcept
-    : vardas_(std::move(other.vardas_)),
-    pavarde_(std::move(other.pavarde_)),
+    : zmogus(std::move(other)),          // bazinės dalies perkėlimas
     nd_(std::move(other.nd_)),
     egzaminas_(other.egzaminas_),
     galutinisVid_(other.galutinisVid_),
     galutinisMed_(other.galutinisMed_)
 {
-    // Šaltinis paliekamas apibrėžtoje tuščioje būsenoje
+    // Šaltinis paliekamas galiojančioje, bet tuščioje būsenoje
     other.egzaminas_ = 0;
     other.galutinisVid_ = 0.0;
     other.galutinisMed_ = 0.0;
 
-    ++gyvuObjektu;
+    ++gyvuStudentu;
 }
 
 // -------------------------------------------------------
@@ -169,17 +189,16 @@ studentas::studentas(studentas&& other) noexcept
 // -------------------------------------------------------
 studentas& studentas::operator=(studentas&& other) noexcept
 {
-    if (this == &other)       // apsauga nuo priskyrimo sau
+    if (this == &other)                  // apsauga nuo priskyrimo sau
         return *this;
 
-    vardas_ = std::move(other.vardas_);
-    pavarde_ = std::move(other.pavarde_);
+    zmogus::operator=(std::move(other)); // bazinės dalies perkėlimas
+
     nd_ = std::move(other.nd_);
     egzaminas_ = other.egzaminas_;
     galutinisVid_ = other.galutinisVid_;
     galutinisMed_ = other.galutinisMed_;
 
-    // Šaltinis paliekamas apibrėžtoje tuščioje būsenoje
     other.egzaminas_ = 0;
     other.galutinisVid_ = 0.0;
     other.galutinisMed_ = 0.0;
@@ -188,20 +207,49 @@ studentas& studentas::operator=(studentas&& other) noexcept
 }
 
 // =======================================================
-// 3. SET'ERIAI
+// 3. GRYNAI VIRTUALIŲ METODŲ REALIZACIJA (override)
 // =======================================================
 
-void studentas::setVardas(const std::string& v) {
-    if (v.empty())
-        throw std::invalid_argument("Vardas negali būti tuščias");
-    vardas_ = v;
+// -------------------------------------------------------
+// galutinis — bazinės klasės reikalaujamas įvertinimas.
+// Studentui tai galutinis balas pagal vidurkį.
+// -------------------------------------------------------
+double studentas::galutinis() const
+{
+    return galutinisVid_;
 }
 
-void studentas::setPavarde(const std::string& p) {
-    if (p.empty())
-        throw std::invalid_argument("Pavardė negali būti tuščia");
-    pavarde_ = p;
+// -------------------------------------------------------
+// print — realizuoja polimorfinį operator<<
+// -------------------------------------------------------
+void studentas::print(std::ostream& os) const
+{
+    os << std::left << std::setw(20) << vardas_
+        << std::left << std::setw(20) << pavarde_
+        << std::fixed << std::setprecision(2)
+        << std::left << std::setw(20) << galutinisVid_
+        << std::left << std::setw(20) << galutinisMed_;
 }
+
+// -------------------------------------------------------
+// read — realizuoja polimorfinį operator>>
+// -------------------------------------------------------
+std::istream& studentas::read(std::istream& is)
+{
+    return readStudentas(is);
+}
+
+// -------------------------------------------------------
+// tipas — žmogaus tipo pavadinimas
+// -------------------------------------------------------
+std::string studentas::tipas() const
+{
+    return "Studentas";
+}
+
+// =======================================================
+// 4. SET'ERIAI
+// =======================================================
 
 void studentas::setNd(const std::vector<int>& nd) {
     for (int p : nd)
@@ -223,8 +271,8 @@ void studentas::addPazymys(int p) {
 }
 
 void studentas::isvalyk() {
-    vardas_.clear();
-    pavarde_.clear();
+    vardas_.clear();      // protected laukas iš zmogus
+    pavarde_.clear();     // protected laukas iš zmogus
     nd_.clear();
     nd_.shrink_to_fit();
     egzaminas_ = 0;
@@ -233,7 +281,7 @@ void studentas::isvalyk() {
 }
 
 // =======================================================
-// 4. SKAIČIAVIMAS
+// 5. SKAIČIAVIMAS
 // =======================================================
 
 void studentas::calculateGalutinis() {
@@ -242,7 +290,7 @@ void studentas::calculateGalutinis() {
 }
 
 // =======================================================
-// 5. ĮVESTIS
+// 6. ĮVESTIS
 // =======================================================
 
 // -------------------------------------------------------
@@ -350,8 +398,12 @@ std::istream& studentas::readStudentas(std::istream& is, int ndCount, int lineNu
 }
 
 // =======================================================
-// 6. IŠVESTIS
+// 7. IŠVESTIS
 // =======================================================
+
+// -------------------------------------------------------
+// appendListTo — GREITAS formatavimas failo rašymui (std::to_chars)
+// -------------------------------------------------------
 void studentas::appendListTo(std::string& out) const
 {
     out.append(vardas_);
@@ -376,34 +428,8 @@ void studentas::appendListTo(std::string& out) const
 }
 
 // =======================================================
-// 7. PERDENGTI OPERATORIAI
+// 8. PERDENGTI OPERATORIAI
 // =======================================================
-
-// -------------------------------------------------------
-// operator>> — įvesties operatorius
-// Nuskaito: vardas pavardė nd1 nd2 ... egzaminas
-// (paskutinis skaičius eilutėje laikomas egzaminu)
-// -------------------------------------------------------
-std::istream& operator>>(std::istream& is, studentas& s) {
-    return s.readStudentas(is);
-}
-
-// -------------------------------------------------------
-// operator<< — išvesties operatorius
-// Išveda suformatuotą eilutę su galutiniais balais
-// -------------------------------------------------------
-std::ostream& operator<<(std::ostream& os, const studentas& s) {
-    os << std::left << std::setw(20) << s.vardas_
-        << std::left << std::setw(20) << s.pavarde_
-        << std::fixed << std::setprecision(2)
-        << std::left << std::setw(20) << s.galutinisVid_
-        << std::left << std::setw(20) << s.galutinisMed_;
-    return os;
-}
-
-// -------------------------------------------------------
-// Lyginimo operatoriai
-// -------------------------------------------------------
 
 bool studentas::operator==(const studentas& other) const {
     return vardas_ == other.vardas_
@@ -427,25 +453,18 @@ bool studentas::operator>(const studentas& other) const {
     return other < *this;
 }
 
-// -------------------------------------------------------
-// operator[] — prieiga prie namų darbo pažymio pagal indeksą
-// -------------------------------------------------------
 int studentas::operator[](size_t i) const {
     if (i >= nd_.size())
         throw std::out_of_range("Namų darbo indeksas už ribų: " + std::to_string(i));
     return nd_[i];
 }
 
-// -------------------------------------------------------
-// operator bool — ar objektas turi duomenų
-// explicit, kad neįvyktų netyčinis konvertavimas į int
-// -------------------------------------------------------
 studentas::operator bool() const {
     return !vardas_.empty() && !pavarde_.empty();
 }
 
 // =======================================================
-// 8. NE-NARIAI LYGINIMO FUNKCIJOS
+// 9. NE-NARIAI LYGINIMO FUNKCIJOS
 // =======================================================
 
 bool comparePagalVarda(const studentas& s1, const studentas& s2) {
