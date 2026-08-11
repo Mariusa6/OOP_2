@@ -1,7 +1,13 @@
 # ===== Visual Studio =====
-.vs/
-*.vcxproj.user
+# Projekto failai NEĮTRAUKIAMI — projektas kuriamas per CMakeLists.txt,
+# todėl .vcxproj / .sln yra IDE generuojami, ne šaltinio failai.
+*.vcxproj
 *.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.slnx
+*.cd
+.vs/
 *.sln.docstates
 *.suo
 *.user
@@ -11,6 +17,7 @@
 *.VC.db
 *.VC.VC.opendb
 ipch/
+enc_temp_folder/
 
 # ===== Build aplankai =====
 build/
