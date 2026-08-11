@@ -154,6 +154,7 @@
     <ClCompile Include="studentas.cpp" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="teststudentas.cpp" />
+    <ClCompile Include="zmogus.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="calculate.h" />
