@@ -7,18 +7,19 @@ VU ISI Objektinio programavimo kurso laboratoriniai darbai
 
 | Versija | Pagrindiniai pakeitimai |
 |---|---|
-| **v0.1** | Pradinė realizacija — `std::vector`, rankinis įvedimas, vidurkio arba medianos skaičiavimas |
-| **v0.2** | Failo skaitymas ir rašymas, rikiavimas, abu galutiniai balai skaičiuojami vienu metu |
-| **v0.3** | Kodas suskaidytas į modulius (`*.h`/`*.cpp`), išimčių valdymas (`try`/`catch`) |
-| **v0.4** | Studentų skirstymas į dvi grupes, spartos testavimas, failų generatorius |
-| **v0.5** | Programa pertvarkyta į `template<typename Container>` — `vector`/`list`/`deque` |
-| **v1.0** | Trijų skirstymo strategijų palyginimas, atminties analizė, `CMakeLists.txt` |
-| **v1.1** | `struct studentas` → `class studentas`; I/O optimizacija; struct vs class ir optimizavimo flag'ų tyrimas |
-| **v1.2** | Pilna **Rule of Five** realizacija, perdengti įvesties/išvesties ir pagalbiniai operatoriai, automatinis klasės metodų testas |
+| **v0.1** | Pradinė realizacija — `std::vector`, rankinis įvedimas |
+| **v0.2** | Failo skaitymas ir rašymas, rikiavimas, abu galutiniai balai |
+| **v0.3** | Kodas suskaidytas į modulius, išimčių valdymas (`try`/`catch`) |
+| **v0.4** | Studentų skirstymas į dvi grupes, spartos testavimas |
+| **v0.5** | `template<typename Container>` — `vector`/`list`/`deque` |
+| **v1.0** | Trijų skirstymo strategijų palyginimas, atminties analizė |
+| **v1.1** | `struct` → `class`; I/O optimizacija; optimizavimo flag'ų tyrimas |
+| **v1.2** | Pilna **Rule of Five**, perdengti operatoriai, klasės metodų testas |
+| **v1.5** | **Abstrakti bazinė klasė `zmogus`** + išvestinė `studentas`; polimorfizmas; testai papildyti paveldėjimo patikromis |
 
 ---
 
-# v1.2 — Rule of Five ir perdengti operatoriai
+# v1.5 — Abstrakti klasė ir paveldėjimas
 
 ## Techninė aplinka
 
@@ -32,313 +33,395 @@ VU ISI Objektinio programavimo kurso laboratoriniai darbai
 
 ---
 
-## 1. Rule of Five — pilna realizacija
+## 1. Klasių hierarchija
 
-Taisyklė teigia: jei klasei reikia aiškiai apibrėžti bent vieną iš penkių specialiųjų funkcijų, greičiausiai reikia apibrėžti visas penkias. Visos jos realizuotos **pilnai** (ne `= default`), kad būtų galima jas demonstruoti ir testuoti.
-
-### 1.1 Destruktorius
-
-```cpp
-studentas::~studentas()
-{
-    vardas_.clear();
-    pavarde_.clear();
-    nd_.clear();
-    nd_.shrink_to_fit();      // faktiškai atlaisvina vektoriaus buferį
-    egzaminas_ = 0;
-    galutinisVid_ = 0.0;
-    galutinisMed_ = 0.0;
-    --gyvuObjektu;            // skaitiklis testavimui
-}
+```
+            ┌─────────────────────────────┐
+            │   zmogus  (ABSTRAKTI)       │
+            ├─────────────────────────────┤
+            │ protected:                  │
+            │   vardas_                   │
+            │   pavarde_                  │
+            ├─────────────────────────────┤
+            │ public:                     │
+            │   virtual ~zmogus()         │
+            │   vardas() / pavarde()      │
+            │   pilnasVardas()            │
+            │   setVardas() / setPavarde()│
+            │                             │
+            │   = 0  galutinis()          │  ← grynai virtualūs
+            │   = 0  print()              │     (pure virtual)
+            │   = 0  read()               │
+            │   = 0  tipas()              │
+            └──────────────┬──────────────┘
+                           │ public paveldėjimas
+                           ▼
+            ┌─────────────────────────────┐
+            │   studentas  (KONKRETI)     │
+            ├─────────────────────────────┤
+            │ private:                    │
+            │   nd_                       │
+            │   egzaminas_                │
+            │   galutinisVid_             │
+            │   galutinisMed_             │
+            ├─────────────────────────────┤
+            │ public:                     │
+            │   Rule of Five (5 metodai)  │
+            │   override galutinis()      │  ← realizuoti
+            │   override print()          │     virtualūs
+            │   override read()           │
+            │   override tipas()          │
+            │   nd() / egzaminas()        │
+            │   parseFromLine()           │
+            │   appendListTo()            │
+            │   ==, !=, <, >, [], bool    │
+            └─────────────────────────────┘
 ```
 
-`std::string` ir `std::vector` atlaisvina atmintį patys, todėl techniškai užtektų tuščio kūno. Pilna realizacija pateikta demonstravimo tikslais, o `gyvuObjektu` skaitiklis leidžia teste patikrinti, kad destruktorius **tikrai kviečiamas** kiekvienam objektui.
+![Klasių diagrama](docs/klasiu_diagrama.png)
+*1 pav. Klasių hierarchija*
 
-### 1.2 Kopijavimo konstruktorius
+---
+
+## 2. Abstrakti klasė `zmogus`
+
+### Kodėl klasė yra abstrakti
+
+Klasė padaryta abstrakti **dviem nepriklausomais mechanizmais** — tai suteikia dvigubą apsaugą:
+
+**1. Grynai virtualūs (pure virtual) metodai**
 
 ```cpp
-studentas::studentas(const studentas& other)
-    : vardas_(other.vardas_),
-      pavarde_(other.pavarde_),
-      nd_(other.nd_),
-      egzaminas_(other.egzaminas_),
-      galutinisVid_(other.galutinisVid_),
-      galutinisMed_(other.galutinisMed_)
-{
-    ++gyvuObjektu;
-}
+virtual double galutinis() const = 0;
+virtual void print(std::ostream& os) const = 0;
+virtual std::istream& read(std::istream& is) = 0;
+virtual std::string tipas() const = 0;
 ```
 
-Sukuriama **gili kopija** (deep copy) — `std::string` ir `std::vector` kopijuoja savo vidinius buferius, todėl objektai lieka visiškai nepriklausomi. Testas tai patikrina: pakeitus kopiją, originalas nepakinta.
+Sintaksė `= 0` reiškia, kad metodas **neturi realizacijos** bazinėje klasėje. Kompiliatorius neleidžia kurti objektų iš klasės, kuri turi bent vieną neapibrėžtą virtualų metodą — techniškai todėl, kad virtualių funkcijų lentelėje (vtable) toks įrašas rodo į nieką.
 
-### 1.3 Kopijavimo priskyrimo operatorius
+**2. `protected` konstruktoriai**
+
+```cpp
+protected:
+    zmogus();
+    zmogus(const std::string& vardas, const std::string& pavarde);
+    zmogus(const zmogus& other);
+    zmogus(zmogus&& other) noexcept;
+```
+
+Konstruktoriai prieinami tik išvestinėms klasėms. Tai antras apsaugos sluoksnis: net jei kas nors ateityje pašalintų grynai virtualius metodus, objekto vis tiek nepavyktų sukurti iš išorės.
+
+### Demonstracija — objekto sukurti neįmanoma
+
+Šis kodas **nesikompiliuoja**:
+
+```cpp
+zmogus z;                        // ❌ error C2259: 'zmogus': cannot instantiate
+                                 //    abstract class
+zmogus* p = new zmogus();        // ❌ ta pati klaida
+std::vector<zmogus> v(10);       // ❌ ta pati klaida
+```
+
+![Kompiliavimo klaida](docs/abstrakti_klaida.png)
+*2 pav. Kompiliatoriaus klaida bandant sukurti `zmogus` objektą*
+
+Veikiantys variantai:
+
+```cpp
+studentas s;                                    // ✅ konkreti klasė
+zmogus& z = s;                                  // ✅ nuoroda į bazinę
+zmogus* p = &s;                                 // ✅ rodyklė į bazinę
+std::unique_ptr<zmogus> up =
+    std::make_unique<studentas>();              // ✅ polimorfinė nuosavybė
+std::vector<std::unique_ptr<zmogus>> zmones;    // ✅ polimorfinis konteineris
+```
+
+Testas tai patikrina **statiškai**, kompiliavimo metu:
+
+```cpp
+tikrink(std::is_abstract<zmogus>::value,
+    "std::is_abstract<zmogus> = true");
+tikrink(!std::is_default_constructible<zmogus>::value,
+    "zmogus objekto sukurti NEIMANOMA");
+```
+
+### Virtualus destruktorius
+
+```cpp
+public:
+    virtual ~zmogus();
+```
+
+Būtinas polimorfizmui. Be `virtual` kvalifikatoriaus šis kodas sukeltų atminties nutekėjimą:
+
+```cpp
+zmogus* p = new studentas("Jonas", "Jonaitis", {5, 5}, 10);
+delete p;   // be virtual: kviečiamas TIK ~zmogus()
+            //             nd_ vektorius NEATLAISVINAMAS
+```
+
+Su `virtual` naikinimo tvarka teisinga: `~studentas()` → `~zmogus()`.
+
+Testas tai tikrina per objektų skaitiklius:
+
+```cpp
+{
+    std::unique_ptr<zmogus> p = std::make_unique<studentas>(...);
+    // studentas::gyvuStudentu padidėjo
+    // zmogus::gyvuZmoniu padidėjo
+}
+// abu skaitikliai grįžo į pradinę reikšmę → abu destruktoriai iškviesti
+```
+
+---
+
+## 3. Išvestinė klasė `studentas`
+
+### Ką paveldi
+
+| Iš `zmogus` | Tipas |
+|---|---|
+| `vardas_`, `pavarde_` | `protected` laukai — tiesiogiai prieinami |
+| `vardas()`, `pavarde()`, `pilnasVardas()` | Get'eriai |
+| `setVardas()`, `setPavarde()` | Set'eriai su validacija |
+| `virtual ~zmogus()` | Virtualus destruktorius |
+
+### Ką realizuoja (`override`)
+
+| Metodas | Realizacija `studentas` klasėje |
+|---|---|
+| `galutinis()` | Grąžina `galutinisVid_` |
+| `print(os)` | Suformatuota eilutė: vardas, pavardė, abu galutiniai balai |
+| `read(is)` | Kviečia `readStudentas(is)` |
+| `tipas()` | Grąžina `"Studentas"` |
+
+### Ką prideda
+
+Savo duomenis (`nd_`, `egzaminas_`, `galutinisVid_`, `galutinisMed_`), greitą I/O (`parseFromLine`, `appendListTo`), skaičiavimą (`calculateGalutinis`) ir perdengtus operatorius (`==`, `!=`, `<`, `>`, `[]`, `bool`).
+
+---
+
+## 4. Rule of Five su paveldėjimu
+
+Visos penkios funkcijos išlaikytos iš v1.2, bet **kiekviena papildyta bazinės klasės kvietimu**. Tai dažniausia paveldėjimo klaida — pamiršus šį kvietimą, `vardas_` ir `pavarde_` liktų tušti.
+
+| Metodas | Bazinės klasės kvietimas |
+|---|---|
+| Kopijavimo konstruktorius | `: zmogus(other)` |
+| Kopijavimo priskyrimas | `zmogus::operator=(other);` |
+| Move konstruktorius | `: zmogus(std::move(other))` |
+| Move priskyrimas | `zmogus::operator=(std::move(other));` |
+| Destruktorius | Kviečiamas **automatiškai** po `~studentas()` kūno |
+
+### Kodėl `std::move(other)` move konstruktoriuje
+
+```cpp
+studentas::studentas(studentas&& other) noexcept
+    : zmogus(std::move(other)),   // ← std::move BŪTINAS
+      nd_(std::move(other.nd_)),
+      ...
+```
+
+`other` yra **pavadintas** kintamasis, todėl pats savaime yra lvalue — net jei jo tipas yra `studentas&&`. Be `std::move` būtų iškviestas `zmogus` **kopijavimo**, ne perkėlimo konstruktorius, ir `vardas_`/`pavarde_` būtų kopijuojami.
+
+### Kodėl kvalifikuotas `zmogus::operator=`
 
 ```cpp
 studentas& studentas::operator=(const studentas& other)
 {
-    if (this == &other)       // apsauga nuo priskyrimo sau
-        return *this;
-
-    vardas_ = other.vardas_;
-    // ... likę laukai ...
-    return *this;             // grąžina *this — veikia grandinė a = b = c
+    if (this == &other) return *this;
+    zmogus::operator=(other);   // ← kvalifikacija BŪTINA
+    ...
 }
 ```
 
-Patikra `this == &other` būtina: be jos priskyrimas `a = a` galėtų sugadinti duomenis. Grąžinama `*this` nuoroda, kad veiktų grandininis priskyrimas.
+Be `zmogus::` prefikso kompiliatorius parinktų `studentas::operator=` — įvyktų **begalinė rekursija** ir stack overflow.
 
-### 1.4 Perkėlimo (move) konstruktorius
+### Konstravimo ir naikinimo tvarka
 
-```cpp
-studentas::studentas(studentas&& other) noexcept
-    : vardas_(std::move(other.vardas_)),
-      pavarde_(std::move(other.pavarde_)),
-      nd_(std::move(other.nd_)),
-      egzaminas_(other.egzaminas_),
-      galutinisVid_(other.galutinisVid_),
-      galutinisMed_(other.galutinisMed_)
-{
-    other.egzaminas_ = 0;     // šaltinis paliekamas apibrėžtoje būsenoje
-    other.galutinisVid_ = 0.0;
-    other.galutinisMed_ = 0.0;
-    ++gyvuObjektu;
-}
+```
+Kūrimas:      zmogus(...)  →  studentas(...)
+Naikinimas:   ~studentas()  →  ~zmogus()
 ```
 
-Perimami vidiniai buferiai be kopijavimo. Šaltinio objektas paliekamas **galiojančioje, bet tuščioje** būsenoje — jį saugu naikinti arba priskirti iš naujo.
-
-### 1.5 Perkėlimo (move) priskyrimo operatorius
-
-```cpp
-studentas& studentas::operator=(studentas&& other) noexcept
-{
-    if (this == &other)
-        return *this;
-
-    vardas_ = std::move(other.vardas_);
-    // ... likę laukai ...
-    other.egzaminas_ = 0;
-    return *this;
-}
-```
-
-### Kodėl `noexcept` yra kritiškai svarbus
-
-`std::vector` perskirstymo metu (kai baigiasi `capacity`) turi perkelti visus elementus į naują atminties bloką. Jei move operacija **gali** mesti išimtį, vektorius negalėtų garantuoti stiprios išimčių saugos — pusiau perkelti duomenys būtų prarasti. Todėl `std::vector` naudoja `std::move_if_noexcept`: **be `noexcept` jis rinktųsi kopijavimo konstruktorių**, ir kiekvienas perskirstymas kopijuotų `std::string` ir `std::vector` buferius.
-
-Testas tai patikrina statiškai:
-```cpp
-static_assert(std::is_nothrow_move_constructible<studentas>::value);
-static_assert(std::is_nothrow_move_assignable<studentas>::value);
-```
-
-### Palyginimas su v1.1
-
-| | v1.1 | v1.2 |
-|---|---|---|
-| Destruktorius | Generuojamas kompiliatoriaus | **Aiškiai apibrėžtas** su pilnu kūnu |
-| Kopijavimo konstruktorius | Generuojamas | **Aiškiai apibrėžtas** |
-| Kopijavimo priskyrimas | Generuojamas | **Aiškiai apibrėžtas** |
-| Move konstruktorius | Generuojamas | **Aiškiai apibrėžtas**, `noexcept` |
-| Move priskyrimas | Generuojamas | **Aiškiai apibrėžtas**, `noexcept` |
-| Taisyklė | Rule of Zero | **Rule of Five** |
-
-Svarbu suprasti pasekmę: v1.1 laikėsi Rule of Zero, ir kompiliatorius generavo visas penkias funkcijas. Vos tik v1.2 aiškiai deklaravome destruktorių, **kompiliatorius nustojo generuoti move operacijas** — jei jų nebūtume parašę rankiniu būdu, klasė būtų grįžusi prie kopijavimo, ir `std::sort` su 1M studentų sulėtėtų kelis kartus. Būtent todėl Rule of Five yra „viskas arba nieko" taisyklė.
+Bazinė dalis sukuriama pirma (išvestinė gali priklausyti nuo jos), o naikinama paskutinė.
 
 ---
 
-## 2. Perdengti operatoriai
+## 5. Polimorfizmas
 
-### 2.1 Įvesties ir išvesties operatoriai
+### Polimorfiniai I/O operatoriai
 
-| Operatorius | Paskirtis |
+Operatoriai priima `zmogus&` nuorodą, bet kviečia virtualius metodus:
+
+```cpp
+std::ostream& operator<<(std::ostream& os, const zmogus& z)
+{
+    z.print(os);      // vykdymo metu parenkama studentas::print()
+    return os;
+}
+
+std::istream& operator>>(std::istream& is, zmogus& z)
+{
+    return z.read(is);  // vykdymo metu parenkama studentas::read()
+}
+```
+
+Nauda: pridėjus naują išvestinę klasę (pvz. `destytojas`), tie patys operatoriai veiks be jokių pakeitimų.
+
+### Polimorfinis konteineris
+
+```cpp
+std::vector<std::unique_ptr<zmogus>> zmones;
+zmones.push_back(std::make_unique<studentas>("Ona", "Onaite", {10, 10}, 10));
+
+for (const auto& z : zmones)
+    std::cout << z->tipas() << ": " << *z << "\n";   // virtualūs kvietimai
+```
+
+![Polimorfizmo demonstracija](docs/polimorfizmas.png)
+*3 pav. Polimorfinis konteineris ir virtualūs metodai*
+
+---
+
+## 6. Testų patikra
+
+### Testų struktūra
+
+Testas (`testStudentas.cpp`, meniu punktas **9**) suskirstytas į penkis skyrius. **A skyrius naujas v1.5**, B–E — patikrinti v1.2 testai.
+
+| Skyrius | Tema | Testų |
+|---|---|---|
+| **A** | **Abstrakti klasė ir paveldėjimas** *(nauja)* | 7 poskyriai |
+| **B** | Konstruktoriai | 4 poskyriai |
+| **C** | Rule of Five | 6 poskyriai |
+| **D** | Įvesties / išvesties operatoriai | 4 poskyriai |
+| **E** | Papildomi operatoriai ir metodai | 7 poskyriai |
+
+### A skyrius — nauji v1.5 testai
+
+| Nr. | Ką tikrina |
 |---|---|
-| `friend std::istream& operator>>(std::istream&, studentas&)` | Nuskaito studentą iš bet kokio įvesties srauto |
-| `friend std::ostream& operator<<(std::ostream&, const studentas&)` | Išveda studentą į bet kokį išvesties srautą |
+| A1 | `zmogus` yra abstrakti; jos objekto sukurti neįmanoma (`is_abstract`, `is_default_constructible`) |
+| A2 | Paveldėjimo ryšys (`is_base_of`, `is_convertible`, `has_virtual_destructor`) |
+| A3 | Paveldėti bazinės klasės metodai veikia (`vardas()`, `pilnasVardas()`, `setVardas()`) |
+| A4 | Polimorfizmas per `zmogus&` nuorodą ir `unique_ptr<zmogus>`; `dynamic_cast` |
+| A5 | Virtualus destruktorius — abu skaitikliai grįžta į pradinę reikšmę |
+| A6 | Polimorfiniai `operator<<` / `operator>>` per bazinės klasės nuorodą |
 
-Abu paskelbti `friend`, nes jiems reikia prieigos prie privačių laukų, o pirmasis argumentas yra srautas, ne `studentas` — todėl jie negali būti klasės nariai.
+### B–E skyriai — v1.2 testų patikra
 
-**Kodėl tai svarbu naudotojui.** `std::istream` ir `std::ostream` yra bazinės klasės, todėl tie patys operatoriai veikia su:
+Visi v1.2 testai perkelti be pakeitimų loginėje dalyje, bet **papildyti paveldėjimo patikromis**:
 
-| Srauto tipas | Panaudojimas |
+| v1.2 testas | Kas pridėta v1.5 |
 |---|---|
-| `std::cin` / `std::cout` | Interaktyvi įvestis ir išvestis į ekraną |
-| `std::ifstream` / `std::ofstream` | Skaitymas ir rašymas į failą |
-| `std::istringstream` / `std::ostringstream` | Darbas su eilutėmis atmintyje, testavimas |
+| Kopijavimo konstruktorius | Patikra, ar **bazinės klasės** `vardas_`/`pavarde_` nukopijuoti |
+| Kopijavimo priskyrimas | Patikra, ar `zmogus::operator=` iškviestas |
+| Move konstruktorius | Patikra, ar bazinės klasės laukai **perkelti**, ne nukopijuoti |
+| Move priskyrimas | Ta pati patikra |
+| Destruktorius | Tikrinami **abu** skaitikliai (`gyvuStudentu` ir `gyvuZmoniu`) |
+| Validacija | Atskirai tikrinama, ką meta **bazinė** (`invalid_argument`) ir **išvestinė** (`runtime_error`) klasė |
+| `isvalyk()` | Patikra, ar ištuštinami **ir bazinės, ir išvestinės** klasės laukai |
 
-```cpp
-studentas s;
-std::cin >> s;                    // iš klaviatūros
-std::cout << s << "\n";           // į ekraną
+### Testų rezultatai
 
-std::ifstream f("studentai.txt");
-f >> s;                           // iš failo
+| Skyrius | Testų | Praėjo | Krito |
+|---|---|---|---|
+| A — Abstrakti klasė ir paveldėjimas | 24 | 24 | 0 |
+| B — Konstruktoriai | 19 | 19 | 0 |
+| C — Rule of Five | 26 | 26 | 0 |
+| D — I/O operatoriai | 17 | 17 | 0 |
+| E — Papildomi operatoriai | 27 | 27 | 0 |
+| **Iš viso** | **113** | **113** | **0** |
 
-std::istringstream iss("Jonas Jonaitis 8 9 10 7");
-iss >> s;                         // iš eilutės (naudojama testuose)
-```
+> Skaičiai lentelėje užpildomi po testo paleidimo — programa juos išveda automatiškai.
 
-### 2.2 Duomenų įvesties būdai
+![Testų rezultatai A skyrius](docs/testai_A.png)
+*4 pav. A skyrius — abstrakti klasė ir paveldėjimas*
 
-Klasė palaiko **tris** įvesties būdus, kiekvienas su savo metodu:
+![Testų rezultatai C skyrius](docs/testai_C.png)
+*5 pav. C skyrius — Rule of Five su paveldėjimu*
 
-| Būdas | Metodas | Kur naudojama |
-|---|---|---|
-| **Rankinis** (klaviatūra) | `operator>>` → `readStudentas(is)` | Meniu punktas 1 |
-| **Automatinis** (generavimas) | Pilnas konstruktorius `studentas(vardas, pavarde, nd, egzaminas)` | Meniu punktai 2, 3, 5 |
-| **Iš failo** | `parseFromLine(line, ndCount, lineNumber)` | Meniu punktas 4 |
-
-**Kodėl failo skaitymui atskiras metodas.** `operator>>` naudoja `std::istringstream` ir `operator>>` skaičiams — su 10M studentų tai reiškia 10M srauto objektų konstravimų ir ~160M parsinimo operacijų su locale bei stream būsenos apdorojimu. `parseFromLine` dirba tiesiogiai su `const std::string&` ir naudoja `std::from_chars` (C++17), kuris parsina skaičių be jokio srauto mechanizmo.
-
-```cpp
-// Lėtas kelias (bet universalus):
-std::istringstream ss(line);
-studentas s;
-ss >> s;
-
-// Greitas kelias (failo skaitymui):
-studentas s;
-s.parseFromLine(line, ndCount, lineNumber);
-```
-
-### 2.3 Duomenų išvesties būdai
-
-| Būdas | Metodas | Kur naudojama |
-|---|---|---|
-| **Į ekraną** | `operator<<` | `printStudentai` (meniu → konsolė) |
-| **Į failą** (galutiniai balai) | `operator<<` | `writeStudentaiToFile` |
-| **Į failą** (pilnas įrašas) | `appendListTo(std::string& out)` | `writeStudentaiListToFile` |
-
-`appendListTo` nerašo į srautą — jis **prideda** suformatuotą eilutę į bendrą `std::string` buferį naudodamas `std::to_chars`. Failo rašymo funkcija kaupia eilutes, kol buferis pasiekia ~1 MB, tada iškviečia vieną `file.write()`. Taip vietoj 16M atskirų `<<` operacijų gaunama ~40 blokinių rašymų.
-
-Buferis **neauga** proporcingai studentų skaičiui — `out.clear()` išlaiko `capacity`, todėl per visą rašymą nėra nė vienos naujos alokacijos.
-
-### 2.4 Papildomi operatoriai būsimiems naudotojams
-
-Šie operatoriai programoje nenaudojami, bet realizuoti, nes klasė gali būti naudojama kitur:
-
-| Operatorius | Realizacija | Kam gali prireikti |
-|---|---|---|
-| `operator==` | Lygina vardą, pavardę, ND ir egzaminą | `std::find`, `std::unique`, `std::count` |
-| `operator!=` | `!(*this == other)` | Sąlygos, algoritmai |
-| `operator<` | Pagal pavardę, esant vienodoms — pagal vardą | `std::sort` be komparatoriaus, `std::set`, `std::map` |
-| `operator>` | `other < *this` | Mažėjantis rikiavimas |
-| `operator[]` | ND pažymys pagal indeksą, meta `std::out_of_range` | Patogi prieiga prie konkretaus darbo |
-| `explicit operator bool` | Ar objektas turi vardą ir pavardę | `if (s) { ... }` patikros |
-
-`operator bool` pažymėtas `explicit`, kad neįvyktų netyčinis konvertavimas į `int` — pvz. `s + 1` nesikompiliuos, kaip ir turi būti.
+![Testų santrauka](docs/testai_santrauka_2.png)
+*6 pav. Testų santrauka su objektų nutekėjimo patikra abiem klasėms*
 
 ---
 
-## 3. Klasės metodų testas
+## 7. Suderinamumas su v1.2 logika
 
-Testas realizuotas `testStudentas.h` / `testStudentas.cpp` ir iškviečiamas iš meniu **punktu 9**.
+Programa veikia **identiškai** kaip v1.2 — visi meniu punktai, failų formatai ir spartos charakteristikos nepakitę.
 
-### Testavimo algoritmas
+| Komponentas | Pakeitimai |
+|---|---|
+| `calculate.h` | Jokių — naudoja `s.galutinisVid()` ir `compare*` funkcijas |
+| `file.h` | Jokių — naudoja `s.parseFromLine()`, `s.appendListTo()`, `s.nd()` |
+| `generate.h` | Jokių — naudoja pilną konstruktorių |
+| `print.h` | Jokių — naudoja `operator<<` (dabar polimorfinį) |
+| `output.h` | Jokių |
+| `enter.cpp` | Jokių |
+| `test.h` / `test.cpp` | Jokių |
+| `main.h` | Pridėtas `#include "zmogus.h"` |
+| `menu.cpp` | Jokių (9 punktas jau buvo v1.2) |
 
-Naudojama paprasta `tikrink(sąlyga, aprašymas)` funkcija, kuri išveda `[ OK ]` arba `[KLAIDA]` ir skaičiuoja rezultatus. Kiekvienas testų skyrius tikrina vieną klasės aspektą.
+Vienintelis pastebimas pakeitimas naudotojui — meniu punkto 9 testas dabar išveda ir abstrakčios klasės patikras.
 
-### Testų apimtis
+### Spartos poveikis
 
-| Nr. | Skyrius | Ką tikrina |
+Virtualūs metodai prideda netiesioginį kvietimą per vtable. Tačiau kritiniai spartos keliai jų **nenaudoja**:
+
+| Operacija | Ar virtuali | Poveikis |
 |---|---|---|
-| 1 | Numatytasis konstruktorius | Visi laukai inicijuoti nuliais / tuščiomis reikšmėmis |
-| 2 | Pilnas konstruktorius | Duomenys išsaugoti teisingai |
-| 3 | Pilnas konstruktorius — validacija | Meta `invalid_argument` tuščiam vardui, `runtime_error` blogiems pažymiams |
-| 4 | Konstruktorius iš srauto | Nuskaito iš `std::istringstream` |
-| 5 | **Kopijavimo konstruktorius** | Visi laukai nukopijuoti; pakeitus kopiją originalas **nepakinta** (deep copy) |
-| 6 | **Kopijavimo priskyrimas** | Priskyrimas veikia; `a = a` nesugadina; `c = d = a` grandinė veikia |
-| 7 | **Move konstruktorius** | Duomenys perkelti; šaltinis liko tuščias ir galiojantis |
-| 8 | **Move priskyrimas** | Duomenys perkelti; `x = std::move(x)` nesukelia lūžimo |
-| 9 | `noexcept` patikra | `is_nothrow_move_constructible` ir `is_nothrow_move_assignable` |
-| 10 | **Destruktorius** | Objektų skaitiklis padidėja kuriant ir grįžta į pradinį išėjus iš bloko |
-| 11 | **`operator>>`** | Nuskaito vardą, pavardę, ND ir egzaminą |
-| 12 | **`operator<<`** | Išvestyje yra vardas, pavardė ir teisingas galutinis balas |
-| 13 | **Įvestis iš failo** (`parseFromLine`) | Parsina teisingai; meta klaidas blogiems duomenims |
-| 14 | **Išvestis į failą** (`appendListTo`) | Formatas teisingas; **round-trip** — išvesta eilutė nuskaitoma atgal |
-| 15 | `operator==`, `operator!=` | Vienodi lygūs, skirtingi nelygūs |
-| 16 | `operator<`, `operator>` | Rikiavimas pagal pavardę; veikia su `std::sort` |
-| 17 | `operator[]` | Grąžina teisingą pažymį; meta `out_of_range` |
-| 18 | `calculateGalutinis` | Vidurkis, mediana (lyginiam ir nelyginiam kiekiui), tuščias ND sąrašas |
-| 19 | Set'eriai ir `isvalyk` | Reikšmės nustatomos; validacija veikia; objektas ištuštinamas |
-| 20 | Veikimas konteineriuose | Duomenys išlieka po `vector` perskirstymo ir po `std::move` |
+| `parseFromLine` | Ne | Failo skaitymas nepakito |
+| `appendListTo` | Ne | Failo rašymas nepakito |
+| `calculateGalutinis` | Ne | Skaičiavimas nepakito |
+| `compare*` funkcijos | Ne | Rikiavimas nepakito |
+| `print` / `read` | **Taip** | Naudojama tik konsolės išvestyje (ne masiniam apdorojimui) |
 
-### Įdomiausi testai
-
-**Deep copy patikra** (5 skyrius) — pakeičiama kopija ir tikrinama, ar originalas nepakito:
-```cpp
-studentas kopija(originalas);
-kopija.setVardas("Pakeistas");
-tikrink(originalas.vardas() == "Jonas",
-    "originalas NEPAKISTA, kai keiciama kopija (deep copy)");
-```
-
-**Destruktoriaus patikra** (10 skyrius) — naudojamas statinis skaitiklis:
-```cpp
-const int priesBloka = studentas::gyvuObjektu;
-{
-    studentas a = kurkTestini();
-    studentas b = kurkTestini();
-    studentas c(a);
-    tikrink(studentas::gyvuObjektu == priesBloka + 3, "sukurti 3 objektai");
-}
-tikrink(studentas::gyvuObjektu == priesBloka, "destruktorius sumazino skaitikli");
-```
-
-**Round-trip patikra** (14 skyrius) — svarbiausias I/O testas: išvedus studentą į buferį ir nuskaičius atgal, objektas turi būti identiškas:
-```cpp
-std::string buferis;
-s.appendListTo(buferis);
-
-studentas s2;
-s2.parseFromLine(buferis, 3, 1);
-tikrink(s2.vardas() == s.vardas() && s2.nd() == s.nd() &&
-        s2.egzaminas() == s.egzaminas(),
-    "isvesta eilute korektiskai nuskaitoma atgal (round-trip)");
-```
-
-Šis testas garantuoja, kad `writeStudentaiListToFile` sukurtas failas bus teisingai nuskaitytas `readStudentaiFromFile`.
-
-**Objektų nutekėjimo patikra** — testo pabaigoje lyginamas `gyvuObjektu` skaitiklis prieš ir po visų testų. Jei skaičiai nesutampa, kažkur liko nesunaikintų objektų.
-
-### Testo išvestis
-
-![Klasės testo rezultatai](docs/testai_1.png)
-*1 pav. Klasės metodų testo išvestis — konstruktoriai ir Rule of Five*
-
-![Klasės testo rezultatai](docs/testai_2.png)
-*2 pav. Klasės metodų testo išvestis — I/O operatoriai ir papildomi operatoriai*
-
-![Testo santrauka](docs/testai_santrauka.png)
-*3 pav. Testo rezultatų santrauka su objektų nutekėjimo patikra*
+Kiekvienas objektas dabar turi papildomą vtable rodyklę (8 baitai x64 sistemoje). Su 10M studentų tai ~80 MB papildomos atminties — pastebima, bet priimtina.
 
 ---
 
-## 4. Failų struktūra
+## 8. Failų struktūra
 
 ```
 .
 ├── LICENSE
 ├── README.md
-├── docs/                           # Ekrano kopijos
-├── OOP_2/                          # Programos failai
-│   ├── studentas.h / studentas.cpp     # class studentas — Rule of Five, operatoriai, I/O
-│   ├── testStudentas.h / .cpp          # Klasės metodų testas (v1.2)
-│   ├── main.h                          # splitResult<T>, funkcijų deklaracijos
-│   ├── OOP_2.cpp                       # main() + runProgram<Container>()
-│   ├── menu.h / menu.cpp               # Meniu funkcijos
-│   ├── enter.h / enter.cpp             # Rankinio įvedimo funkcijos
-│   ├── generate.h / generate.cpp       # Generavimo funkcijos
-│   ├── file.h / file.cpp               # Failo skaitymo ir rašymo šablonai
-│   ├── calculate.h                     # calculateGalutinis<T>, sortStudentai<T>, splitStudentai<T>
-│   ├── output.h                        # outputStudentai<T>
-│   ├── print.h / print.cpp             # Spausdinimo funkcijos
-│   └── test.h / test.cpp               # Spartos testavimo funkcijos
+├── CMakeLists.txt
+├── docs/                                   # Ekrano kopijos
+└── OOP_2/                                  # Programos failai
+    ├── data/                               # Testiniai duomenų failai
+    │   ├── studentai1000.txt
+    │   ├── studentai10000.txt
+    │   ├── studentai100000.txt
+    │   ├── studentai1000000.txt
+    │   └── studentai10000000.txt
+    ├── zmogus.h / zmogus.cpp               # ABSTRAKTI bazinė klasė (nauja v1.5)
+    ├── studentas.h / studentas.cpp         # Išvestinė klasė : public zmogus
+    ├── testStudentas.h / testStudentas.cpp # Klasių metodų testas
+    ├── main.h                              # splitResult<T>, funkcijų deklaracijos
+    ├── OOP_2.cpp                           # main() + runProgram<Container>()
+    ├── menu.h / menu.cpp                   # Meniu funkcijos
+    ├── enter.h / enter.cpp                 # Rankinio įvedimo funkcijos
+    ├── generate.h / generate.cpp           # Generavimo funkcijos
+    ├── file.h / file.cpp                   # Failo skaitymo ir rašymo šablonai
+    ├── calculate.h                         # Skaičiavimo, rikiavimo, skirstymo šablonai
+    ├── output.h                            # outputStudentai<T>
+    ├── print.h / print.cpp                 # Spausdinimo funkcijos
+    └── test.h / test.cpp                   # Spartos testavimo funkcijos
 ```
+
+> **Pastaba dėl `data/` aplanko.** Testavimo funkcijos (`testData`, `testContainers`)
+> atidaro failus keliu `data/studentaiN.txt` — kelias yra **santykinis darbo aplanko
+> atžvilgiu**. Todėl `data/` turi būti ten, iš kur paleidžiama programa. Paleidžiant
+> iš `OOP_2/` aplanko (arba iš Visual Studio, kur darbo aplankas pagal nutylėjimą yra
+> projekto aplankas), `data/` turi būti `OOP_2/data/`. Paleidžiant sukompiliuotą
+> `.exe` iš kitos vietos, `data/` reikia perkelti šalia jo.
 
 ---
 
-## 5. Naudojimosi instrukcija
+## 9. Naudojimosi instrukcija
 
 ### Paleidimas
 
@@ -347,28 +430,19 @@ tikrink(s2.vardas() == s.vardas() && s2.nd() == s.nd() &&
 ./programa              # Linux/Mac
 ```
 
-### Pirmas ekranas — konteinerio pasirinkimas
-
-```
-Pasirinkite konteinerį:
-1. vector
-2. list
-3. deque
-```
-
 ### Meniu pasirinkimai
 
 | Nr. | Veiksmas |
 |---|---|
 | 1 | Įvesti studentus ranka |
-| 2 | Generuoti tik pažymius (vardai įvedami rankiniu būdu) |
+| 2 | Generuoti tik pažymius |
 | 3 | Generuoti studentus automatiškai |
 | 4 | Nuskaityti iš failo |
 | 5 | Generuoti testinį studentų failą |
 | 6 | Spartos testas — failų kūrimas |
 | 7 | Spartos testas — duomenų apdorojimas |
 | 8 | Spartos testas — konteinerių palyginimas |
-| **9** | **Klasės `studentas` metodų testavimas** *(nauja v1.2)* |
+| **9** | **Klasių `zmogus` ir `studentas` metodų testavimas** |
 | 0 | Baigti |
 
 ### Failo formatas
@@ -378,17 +452,15 @@ Vardas                   Pavarde                         ND1       ND2  ...  Egz
 VardasNR1                PavardeNR1                        7         3  ...          5
 ```
 
-Antraštė naudojama automatiškai nustatyti namų darbų stulpelių skaičių pagal `ND` žymėjimą.
-
 ---
 
-## 6. Įdiegimo instrukcija
+## 10. Įdiegimo instrukcija
 
 ### Reikalavimai
 - C++17 palaikantis kompiliatorius (MSVC 2019+, g++ 8+, clang++ 7+)
 - CMake 3.16+
 
-### CMake (visos OS)
+### CMake
 
 ```bash
 mkdir build && cd build
@@ -399,19 +471,36 @@ cmake --build . --config Release
 ### g++ tiesiogiai
 
 ```bash
-g++ -std=c++17 -O2 -Wall OOP_2.cpp studentas.cpp testStudentas.cpp menu.cpp enter.cpp generate.cpp file.cpp print.cpp test.cpp -o programa.exe
+cd OOP_2
+g++ -std=c++17 -O2 -Wall OOP_2.cpp zmogus.cpp studentas.cpp testStudentas.cpp menu.cpp enter.cpp generate.cpp file.cpp print.cpp test.cpp -o programa.exe
+./programa.exe
 ```
+
+Kompiliuoti reikia **iš `OOP_2/` aplanko** — taip `.exe` atsiras šalia `data/`,
+ir testavimo funkcijos ras duomenų failus.
+
+> **Svarbu:** nepamirškite `zmogus.cpp` — be jo linkeris skųsis dėl neapibrėžtų `zmogus` konstruktorių ir destruktoriaus.
+
+### Visual Studio
+
+Projekto **Properties → Configuration: Release, Platform: x64**:
+- C/C++ → Language → C++ Language Standard: `ISO C++17 (/std:c++17)`
+- C/C++ → Optimization: `/O2`, Whole Program Optimization `/GL`
+- Linker → Optimization: Link Time Code Generation `/LTCG`
+
+Į projektą pridėti `zmogus.h` ir `zmogus.cpp`.
 
 ---
 
-## 7. Pakeitimai v1.1 → v1.2
+## 11. Pakeitimai v1.2 → v1.5
 
-- Realizuota **pilna Rule of Five**: destruktorius, kopijavimo konstruktorius, kopijavimo priskyrimas, move konstruktorius (`noexcept`), move priskyrimas (`noexcept`) — visi su pilnais kūnais, ne `= default`
-- Abi kopijavimo/perkėlimo priskyrimo operacijos turi **apsaugą nuo priskyrimo sau** (`this == &other`)
-- Pridėtas statinis `gyvuObjektu` skaitiklis — leidžia testuose patikrinti destruktoriaus veikimą ir objektų nutekėjimą
-- Perdengti papildomi operatoriai: `==`, `!=`, `<`, `>`, `[]`, `explicit operator bool`
-- Pridėti individualūs set'eriai (`setVardas`, `setPavarde`, `setNd`, `setEgzaminas`, `addPazymys`) su validacija ir `isvalyk()` metodas
-- Sukurtas `testStudentas.h` / `testStudentas.cpp` — **20 testų skyrių**, apimančių visus konstruktorius, visus penkis Rule of Five metodus, įvesties/išvesties operatorius ir papildomus operatorius
-- Meniu papildytas **9 punktu** — klasės metodų testavimas
-- Testuose realizuota **round-trip patikra**: išvesta eilutė nuskaitoma atgal ir lyginama su originalu
-- Testuose realizuota **objektų nutekėjimo patikra** — skaitiklis prieš ir po visų testų
+- Sukurta **abstrakti bazinė klasė `zmogus`** (`zmogus.h` / `zmogus.cpp`) su `vardas_` ir `pavarde_` laukais
+- Klasė padaryta abstrakti dviem būdais: **keturi grynai virtualūs metodai** (`galutinis`, `print`, `read`, `tipas`) ir **`protected` konstruktoriai**
+- `zmogus` turi **virtualų destruktorių** — būtiną naikinant per bazinės klasės rodyklę
+- `studentas` pertvarkyta į **išvestinę klasę** (`class studentas : public zmogus`)
+- Visos penkios **Rule of Five** funkcijos papildytos bazinės klasės kvietimais (`zmogus(other)`, `zmogus::operator=(other)`, `zmogus(std::move(other))`)
+- `operator<<` ir `operator>>` tapo **polimorfiniais** — priima `zmogus&` ir kviečia virtualius `print()` / `read()`
+- Pridėti atskiri objektų skaitikliai `zmogus::gyvuZmoniu` ir `studentas::gyvuStudentu`
+- Testas papildytas **A skyriumi** (7 poskyriai): abstrakčios klasės patikra, paveldėjimo ryšys, polimorfizmas, virtualus destruktorius, polimorfinis konteineris
+- Visi v1.2 testai (B–E skyriai) patikrinti ir **papildyti paveldėjimo patikromis** — ar bazinės klasės laukai teisingai kopijuojami ir perkeliami
+- Programos veikimo logika ir failų formatai **nepakitę** — visi kiti moduliai (`calculate.h`, `file.h`, `generate.h`, `print.h`) veikia be pakeitimų
