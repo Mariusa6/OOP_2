@@ -1,6 +1,8 @@
 #ifndef STUDENTAS_H_DEFINED
 #define STUDENTAS_H_DEFINED
 
+#include "zmogus.h"
+
 #include <string>
 #include <vector>
 #include <iostream>
@@ -11,25 +13,31 @@
 #include <charconv>
 
 // -------------------------------------------------------
-// class studentas
+// class studentas : public zmogus
 //
-// Saugo vieno studento duomenis ir skaičiuoja galutinius balus.
+// IŠVESTINĖ (derived) klasė iš abstrakčios bazinės klasės zmogus.
 //
-// v1.2: realizuota pilna "Rule of Five" taisyklė —
-//   1. Destruktorius
-//   2. Kopijavimo konstruktorius
-//   3. Kopijavimo priskyrimo operatorius
-//   4. Perkėlimo (move) konstruktorius
-//   5. Perkėlimo (move) priskyrimo operatorius
+// Paveldi:
+//   - vardas_, pavarde_ (protected laukai)
+//   - vardas(), pavarde(), pilnasVardas() get'erius
+//   - setVardas(), setPavarde() set'erius
+//   - virtualų destruktorių
 //
-// Move operacijos pažymėtos noexcept — be to std::vector
-// perskirstymo metu naudotų kopijavimą, ne perkėlimą.
+// Realizuoja (override) visus grynai virtualius metodus:
+//   - galutinis()  → galutinisVid_
+//   - print()      → suformatuota eilutė su balais
+//   - read()       → nuskaitymas iš srauto
+//   - tipas()      → "Studentas"
+//
+// Prideda savo duomenis: namų darbų pažymius, egzaminą,
+// du galutinius balus (pagal vidurkį ir pagal medianą).
+//
+// Išlaiko pilną v1.2 RULE OF FIVE realizaciją — visos penkios
+// funkcijos kviečia atitinkamas bazinės klasės funkcijas.
 // -------------------------------------------------------
 
-class studentas {
+class studentas : public zmogus {
 private:
-    std::string vardas_;
-    std::string pavarde_;
     std::vector<int> nd_;
     int egzaminas_;
     double galutinisVid_;
@@ -53,9 +61,8 @@ public:
     static constexpr double namuDarbaiSvoris = 0.4;
     static constexpr double egzaminasSvoris = 0.6;
 
-    // Skaitiklis gyvuojantiems objektams — naudojamas testuose,
-    // kad būtų galima patikrinti, ar destruktorius tikrai kviečiamas.
-    static int gyvuObjektu;
+    // Gyvuojančių studentų skaitiklis (atskiras nuo zmogus::gyvuZmoniu)
+    static int gyvuStudentu;
 
     // ---------------------------------------------------
     // 1. Konstruktoriai
@@ -68,19 +75,25 @@ public:
     explicit studentas(std::istream& is);               // iš srauto
 
     // ---------------------------------------------------
-    // 2. RULE OF FIVE
+    // 2. RULE OF FIVE (paveldėta iš v1.2)
     // ---------------------------------------------------
-    ~studentas();                                       // destruktorius
+    ~studentas() override;                              // destruktorius
     studentas(const studentas& other);                  // kopijavimo konstruktorius
     studentas& operator=(const studentas& other);       // kopijavimo priskyrimas
     studentas(studentas&& other) noexcept;              // perkėlimo konstruktorius
     studentas& operator=(studentas&& other) noexcept;   // perkėlimo priskyrimas
 
     // ---------------------------------------------------
-    // 3. Get'eriai (inline, be kopijų)
+    // 3. Grynai virtualių metodų REALIZACIJA (override)
     // ---------------------------------------------------
-    inline const std::string& vardas() const { return vardas_; }
-    inline const std::string& pavarde() const { return pavarde_; }
+    double galutinis() const override;
+    void print(std::ostream& os) const override;
+    std::istream& read(std::istream& is) override;
+    std::string tipas() const override;
+
+    // ---------------------------------------------------
+    // 4. Studentui specifiniai get'eriai
+    // ---------------------------------------------------
     inline const std::vector<int>& nd() const { return nd_; }
     inline int egzaminas() const { return egzaminas_; }
     inline double galutinisVid() const { return galutinisVid_; }
@@ -88,53 +101,42 @@ public:
     inline bool tuscias() const { return vardas_.empty() && pavarde_.empty(); }
 
     // ---------------------------------------------------
-    // 4. Set'eriai (su validacija)
+    // 5. Set'eriai (su validacija)
     // ---------------------------------------------------
-    void setVardas(const std::string& v);
-    void setPavarde(const std::string& p);
     void setNd(const std::vector<int>& nd);
     void setEgzaminas(int e);
     void addPazymys(int p);
-    void isvalyk();                     // atlaisvina duomenis
+    void isvalyk();
 
     // ---------------------------------------------------
-    // 5. Skaičiavimo metodai
+    // 6. Skaičiavimo metodai
     // ---------------------------------------------------
     void calculateGalutinis();
 
     // ---------------------------------------------------
-    // 6. Įvesties metodai
+    // 7. Įvesties metodai
     // ---------------------------------------------------
-    // readStudentas — bendras variantas per std::istream (interaktyvi įvestis)
+    // readStudentas — bendras variantas per std::istream
     std::istream& readStudentas(std::istream& is, int ndCount = 0, int lineNumber = 0);
 
     // parseFromLine — greitas parsinimas failo skaitymui (std::from_chars)
     void parseFromLine(const std::string& line, int ndCount, int lineNumber);
 
     // ---------------------------------------------------
-    // 7. Išvesties metodai
+    // 8. Išvesties metodai
     // ---------------------------------------------------
-    // appendListTo — prideda suformatuotą eilutę į bendrą buferį (std::to_chars)
+    // appendListTo — prideda suformatuotą eilutę į buferį (std::to_chars)
     void appendListTo(std::string& out) const;
 
     // ---------------------------------------------------
-    // 8. Perdengti operatoriai
+    // 9. Perdengti operatoriai
     // ---------------------------------------------------
-    friend std::istream& operator>>(std::istream& is, studentas& s);
-    friend std::ostream& operator<<(std::ostream& os, const studentas& s);
-
-    // Lyginimo operatoriai — naudingi būsimiems klasės naudotojams
-    // (std::find, std::unique, std::set, asociatyvūs konteineriai)
     bool operator==(const studentas& other) const;
     bool operator!=(const studentas& other) const;
     bool operator<(const studentas& other) const;   // pagal pavardę, tada vardą
     bool operator>(const studentas& other) const;
-
-    // Prieiga prie namų darbo pažymio pagal indeksą
-    int operator[](size_t i) const;
-
-    // Konvertavimas į bool — ar objektas turi duomenų
-    explicit operator bool() const;
+    int operator[](size_t i) const;                 // ND pažymys pagal indeksą
+    explicit operator bool() const;                 // ar turi duomenų
 };
 
 // ---------------------------------------------------
@@ -146,4 +148,4 @@ bool comparePagalEgzamina(const studentas& s1, const studentas& s2);
 bool comparePagalVidurki(const studentas& s1, const studentas& s2);
 bool comparePagalMediana(const studentas& s1, const studentas& s2);
 
-#endif
+#endif // STUDENTAS_H_DEFINED
