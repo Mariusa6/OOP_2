@@ -6,9 +6,12 @@
 #include <fstream>
 
 // -------------------------------------------------------
-// testStudentasKlase — rankinis klasės metodų testas.
-// Tikrina visus konstruktorius, Rule of Five metodus,
-// įvesties/išvesties operatorius ir pagalbinius operatorius.
+// testStudentasKlase — rankinis klasių metodų testas.
+//
+// v1.5: papildyta abstrakčios bazinės klasės zmogus ir
+// paveldėjimo testais (A skyrius), išlaikant visus v1.2
+// testus (B–E skyriai).
+//
 // Iškviečiama iš meniu (pasirinkimas 9).
 // Grąžina true, jei visi testai praėjo.
 // -------------------------------------------------------

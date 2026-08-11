@@ -1,4 +1,6 @@
 #include "testStudentas.h"
+#include <memory>       // unique_ptr
+#include <type_traits>  // is_abstract, is_base_of
 
 // =======================================================
 // Testavimo infrastruktūra
@@ -9,7 +11,6 @@ namespace {
     int testuPraejo = 0;
     int testuKrito = 0;
 
-    // Vieno patikrinimo rezultatas
     void tikrink(bool salyga, const std::string& aprasymas)
     {
         if (salyga) {
@@ -28,10 +29,10 @@ namespace {
     }
 
     // Testinis studentas su žinomomis reikšmėmis
+    // ND: 5,5,5,5,5 -> vidurkis 5.0, mediana 5.0
+    // Egzaminas 10 -> galutinis = 0.4*5 + 0.6*10 = 8.0
     studentas kurkTestini()
     {
-        // ND: 5,5,5,5,5 -> vidurkis 5.0, mediana 5.0
-        // Egzaminas 10 -> galutinis = 0.4*5 + 0.6*10 = 8.0
         return studentas("Jonas", "Jonaitis", { 5, 5, 5, 5, 5 }, 10);
     }
 
@@ -47,15 +48,132 @@ bool testStudentasKlase()
     testuKrito = 0;
 
     std::cout << "\n===============================================\n";
-    std::cout << " KLASES studentas METODU TESTAVIMAS\n";
+    std::cout << " KLASIU zmogus IR studentas TESTAVIMAS (v1.5)\n";
     std::cout << "===============================================\n";
 
-    const int pradinisSkaicius = studentas::gyvuObjektu;
+    const int pradinisStudentu = studentas::gyvuStudentu;
+    const int pradinisZmoniu = zmogus::gyvuZmoniu;
 
     // ===================================================
-    // 1. KONSTRUKTORIAI
+    // A. ABSTRAKCIOJI KLASE IR PAVELDEJIMAS (nauja v1.5)
     // ===================================================
-    skyrius("1. Numatytasis konstruktorius");
+    skyrius("A1. Klase zmogus yra ABSTRAKTI");
+    {
+        tikrink(std::is_abstract<zmogus>::value,
+            "std::is_abstract<zmogus> = true (turi grynai virtualiu metodu)");
+        tikrink(!std::is_abstract<studentas>::value,
+            "std::is_abstract<studentas> = false (visi metodai realizuoti)");
+
+        // Sie bandymai NESIKOMPILIUOTU — todel patikra atliekama statiskai:
+        //     zmogus z;                    // klaida: abstrakti klase
+        //     zmogus* p = new zmogus();    // klaida: abstrakti klase
+        tikrink(!std::is_default_constructible<zmogus>::value,
+            "zmogus objekto sukurti NEIMANOMA (is_default_constructible = false)");
+        tikrink(std::is_default_constructible<studentas>::value,
+            "studentas objekta sukurti galima");
+    }
+
+    skyrius("A2. Paveldejimo rysys");
+    {
+        tikrink((std::is_base_of<zmogus, studentas>::value),
+            "studentas yra isvestine is zmogus");
+        tikrink((std::is_convertible<studentas*, zmogus*>::value),
+            "studentas* konvertuojasi i zmogus* (public paveldejimas)");
+        tikrink(std::has_virtual_destructor<zmogus>::value,
+            "zmogus turi VIRTUALU destruktoriu");
+    }
+
+    skyrius("A3. Paveldeti bazines klases metodai");
+    {
+        studentas s = kurkTestini();
+
+        tikrink(s.vardas() == "Jonas", "paveldetas vardas() veikia");
+        tikrink(s.pavarde() == "Jonaitis", "paveldetas pavarde() veikia");
+        tikrink(s.pilnasVardas() == "Jonas Jonaitis", "paveldetas pilnasVardas() veikia");
+
+        s.setVardas("Petras");
+        tikrink(s.vardas() == "Petras", "paveldetas setVardas() veikia");
+
+        bool metaTuscia = false;
+        try { s.setPavarde(""); }
+        catch (const std::invalid_argument&) { metaTuscia = true; }
+        tikrink(metaTuscia, "paveldetas setPavarde() validuoja tuscia reiksme");
+    }
+
+    skyrius("A4. POLIMORFIZMAS per bazines klases rodykle");
+    {
+        studentas s = kurkTestini();
+        s.calculateGalutinis();
+
+        // Nuoroda i bazine klase
+        zmogus& z = s;
+        tikrink(z.vardas() == "Jonas", "prieiga prie vardo per zmogus& nuoroda");
+        tikrink(z.tipas() == "Studentas",
+            "virtualus tipas() grazina isvestines klases reiksme");
+        tikrink(std::abs(z.galutinis() - 8.0) < 1e-9,
+            "virtualus galutinis() = 8.0 (isvestines klases realizacija)");
+
+        // Rodykle i bazine klase
+        std::unique_ptr<zmogus> p = std::make_unique<studentas>(
+            "Ona", "Onaite", std::vector<int>{ 10, 10 }, 10);
+        tikrink(p->tipas() == "Studentas", "virtualus tipas() per unique_ptr<zmogus>");
+        tikrink(p->pilnasVardas() == "Ona Onaite", "paveldetas metodas per rodykle");
+
+        // dynamic_cast atgal i isvestine klase
+        studentas* sp = dynamic_cast<studentas*>(p.get());
+        tikrink(sp != nullptr, "dynamic_cast<studentas*> pavyko");
+        if (sp) tikrink(sp->nd().size() == 2, "prieiga prie isvestines klases duomenu");
+    }
+
+    skyrius("A5. VIRTUALUS destruktorius");
+    {
+        const int priesZmoniu = zmogus::gyvuZmoniu;
+        const int priesStudentu = studentas::gyvuStudentu;
+
+        {
+            // Objektas kuriamas kaip studentas, naikinamas per zmogus rodykle.
+            // Be virtual destruktoriaus studentas laukai liktu neatlaisvinti.
+            std::unique_ptr<zmogus> p = std::make_unique<studentas>(
+                "Testas", "Testaitis", std::vector<int>{ 5, 5 }, 5);
+
+            tikrink(zmogus::gyvuZmoniu == priesZmoniu + 1,
+                "sukurus objekta zmogus skaitiklis padidejo");
+            tikrink(studentas::gyvuStudentu == priesStudentu + 1,
+                "sukurus objekta studentas skaitiklis padidejo");
+        }
+
+        tikrink(studentas::gyvuStudentu == priesStudentu,
+            "~studentas() iskviestas naikinant per zmogus rodykle");
+        tikrink(zmogus::gyvuZmoniu == priesZmoniu,
+            "~zmogus() iskviestas po ~studentas()");
+    }
+
+    skyrius("A6. Polimorfiniai operatoriai << ir >>");
+    {
+        studentas s = kurkTestini();
+        s.calculateGalutinis();
+
+        // operator<< priima zmogus& ir kviecia virtualu print()
+        zmogus& z = s;
+        std::ostringstream oss;
+        oss << z;
+        tikrink(oss.str().find("Jonas") != std::string::npos,
+            "operator<< per zmogus& nuoroda kviecia studentas::print()");
+
+        // operator>> priima zmogus& ir kviecia virtualu read()
+        studentas s2;
+        zmogus& z2 = s2;
+        std::istringstream iss("Ona Onaite 9 8 7");
+        iss >> z2;
+        tikrink(s2.vardas() == "Ona",
+            "operator>> per zmogus& nuoroda kviecia studentas::read()");
+        tikrink(s2.egzaminas() == 7, "nuskaityti duomenys teisingi");
+    }
+
+    // ===================================================
+    // B. KONSTRUKTORIAI (patikra is v1.2)
+    // ===================================================
+    skyrius("B1. Numatytasis konstruktorius");
     {
         studentas s;
         tikrink(s.vardas().empty(), "vardas tuscias");
@@ -67,40 +185,44 @@ bool testStudentasKlase()
         tikrink(!static_cast<bool>(s), "operator bool grazina false tusciam objektui");
     }
 
-    skyrius("2. Pilnas konstruktorius");
+    skyrius("B2. Pilnas konstruktorius");
     {
         studentas s("Jonas", "Jonaitis", { 5, 5, 5, 5, 5 }, 10);
-        tikrink(s.vardas() == "Jonas", "vardas issaugotas");
-        tikrink(s.pavarde() == "Jonaitis", "pavarde issaugota");
+        tikrink(s.vardas() == "Jonas", "vardas issaugotas (per bazine klase)");
+        tikrink(s.pavarde() == "Jonaitis", "pavarde issaugota (per bazine klase)");
         tikrink(s.nd().size() == 5, "nd dydis = 5");
         tikrink(s.egzaminas() == 10, "egzaminas = 10");
         tikrink(static_cast<bool>(s), "operator bool grazina true");
     }
 
-    skyrius("3. Pilnas konstruktorius — validacija");
+    skyrius("B3. Validacija konstruktoriuje");
     {
         bool metaTusciaVarda = false;
         try { studentas s("", "Jonaitis", { 5 }, 10); }
         catch (const std::invalid_argument&) { metaTusciaVarda = true; }
-        tikrink(metaTusciaVarda, "meta invalid_argument, kai vardas tuscias");
+        tikrink(metaTusciaVarda,
+            "BAZINE klase meta invalid_argument, kai vardas tuscias");
 
         bool metaTusciaPavarde = false;
         try { studentas s("Jonas", "", { 5 }, 10); }
         catch (const std::invalid_argument&) { metaTusciaPavarde = true; }
-        tikrink(metaTusciaPavarde, "meta invalid_argument, kai pavarde tuscia");
+        tikrink(metaTusciaPavarde,
+            "BAZINE klase meta invalid_argument, kai pavarde tuscia");
 
         bool metaBlogaND = false;
         try { studentas s("Jonas", "Jonaitis", { 5, 99 }, 10); }
         catch (const std::runtime_error&) { metaBlogaND = true; }
-        tikrink(metaBlogaND, "meta runtime_error, kai ND pazymys = 99");
+        tikrink(metaBlogaND,
+            "ISVESTINE klase meta runtime_error, kai ND pazymys = 99");
 
         bool metaBlogaEgz = false;
         try { studentas s("Jonas", "Jonaitis", { 5 }, 0); }
         catch (const std::runtime_error&) { metaBlogaEgz = true; }
-        tikrink(metaBlogaEgz, "meta runtime_error, kai egzaminas = 0");
+        tikrink(metaBlogaEgz,
+            "ISVESTINE klase meta runtime_error, kai egzaminas = 0");
     }
 
-    skyrius("4. Konstruktorius is srauto");
+    skyrius("B4. Konstruktorius is srauto");
     {
         std::istringstream iss("Petras Petraitis 8 9 10 7");
         studentas s(iss);
@@ -111,28 +233,32 @@ bool testStudentasKlase()
     }
 
     // ===================================================
-    // 2. RULE OF FIVE
+    // C. RULE OF FIVE (patikra is v1.2 su paveldejimu)
     // ===================================================
-    skyrius("5. Kopijavimo konstruktorius");
+    skyrius("C1. Kopijavimo konstruktorius");
     {
         studentas originalas = kurkTestini();
         originalas.calculateGalutinis();
 
         studentas kopija(originalas);
 
-        tikrink(kopija.vardas() == originalas.vardas(), "vardas nukopijuotas");
-        tikrink(kopija.pavarde() == originalas.pavarde(), "pavarde nukopijuota");
+        // Svarbiausia paveldejime: ar BAZINES klases laukai nukopijuoti?
+        tikrink(kopija.vardas() == originalas.vardas(),
+            "BAZINES klases vardas nukopijuotas (zmogus(other) kvietimas)");
+        tikrink(kopija.pavarde() == originalas.pavarde(),
+            "BAZINES klases pavarde nukopijuota");
         tikrink(kopija.nd() == originalas.nd(), "nd vektorius nukopijuotas");
         tikrink(kopija.egzaminas() == originalas.egzaminas(), "egzaminas nukopijuotas");
-        tikrink(kopija.galutinisVid() == originalas.galutinisVid(), "galutinisVid nukopijuotas");
+        tikrink(kopija.galutinisVid() == originalas.galutinisVid(),
+            "galutinisVid nukopijuotas");
 
-        // Svarbiausia: ar objektai nepriklausomi (deep copy)?
+        // Deep copy patikra
         kopija.setVardas("Pakeistas");
         tikrink(originalas.vardas() == "Jonas",
             "originalas NEPAKISTA, kai keiciama kopija (deep copy)");
     }
 
-    skyrius("6. Kopijavimo priskyrimo operatorius");
+    skyrius("C2. Kopijavimo priskyrimo operatorius");
     {
         studentas a = kurkTestini();
         a.calculateGalutinis();
@@ -140,23 +266,22 @@ bool testStudentasKlase()
 
         b = a;
 
-        tikrink(b.vardas() == a.vardas(), "vardas priskirtas");
+        tikrink(b.vardas() == a.vardas(),
+            "BAZINES klases vardas priskirtas (zmogus::operator= kvietimas)");
         tikrink(b.nd() == a.nd(), "nd vektorius priskirtas");
         tikrink(b.galutinisVid() == a.galutinisVid(), "galutinisVid priskirtas");
 
-        // Priskyrimas sau
         a = a;
         tikrink(a.vardas() == "Jonas" && a.nd().size() == 5,
             "priskyrimas sau (a = a) nesugadina objekto");
 
-        // Grandinis priskyrimas
         studentas c, d;
         c = d = a;
         tikrink(c.vardas() == "Jonas" && d.vardas() == "Jonas",
             "grandinis priskyrimas (c = d = a) veikia");
     }
 
-    skyrius("7. Perkelimo (move) konstruktorius");
+    skyrius("C3. Perkelimo (move) konstruktorius");
     {
         studentas saltinis = kurkTestini();
         saltinis.calculateGalutinis();
@@ -164,18 +289,19 @@ bool testStudentasKlase()
 
         studentas tikslas(std::move(saltinis));
 
-        tikrink(tikslas.vardas() == "Jonas", "vardas perkeltas i tiksla");
-        tikrink(tikslas.nd().size() == 5, "nd vektorius perkeltas i tiksla");
+        tikrink(tikslas.vardas() == "Jonas",
+            "BAZINES klases vardas perkeltas (zmogus(std::move(other)))");
+        tikrink(tikslas.nd().size() == 5, "nd vektorius perkeltas");
         tikrink(tikslas.galutinisVid() == tiketinasVid, "galutinisVid perkeltas");
 
-        // Saltinis turi likti galiojancioje, bet tuscioje busenoje
-        tikrink(saltinis.vardas().empty(), "saltinio vardas tuscias po perkelimo");
+        tikrink(saltinis.vardas().empty(),
+            "saltinio BAZINES klases vardas tuscias po perkelimo");
         tikrink(saltinis.nd().empty(), "saltinio nd tuscias po perkelimo");
         tikrink(saltinis.egzaminas() == 0, "saltinio egzaminas = 0 po perkelimo");
         tikrink(!static_cast<bool>(saltinis), "saltinis konvertuojasi i false");
     }
 
-    skyrius("8. Perkelimo (move) priskyrimo operatorius");
+    skyrius("C4. Perkelimo (move) priskyrimo operatorius");
     {
         studentas saltinis = kurkTestini();
         saltinis.calculateGalutinis();
@@ -183,43 +309,48 @@ bool testStudentasKlase()
 
         tikslas = std::move(saltinis);
 
-        tikrink(tikslas.vardas() == "Jonas", "vardas perkeltas priskyrimu");
+        tikrink(tikslas.vardas() == "Jonas",
+            "BAZINES klases vardas perkeltas (zmogus::operator=(std::move))");
         tikrink(tikslas.nd().size() == 5, "nd perkeltas priskyrimu");
         tikrink(saltinis.vardas().empty(), "saltinis istustintas");
 
-        // Priskyrimas sau
         studentas x = kurkTestini();
         x = std::move(x);
         tikrink(x.vardas() == "Jonas" || x.vardas().empty(),
             "move priskyrimas sau nesukelia luzimo");
     }
 
-    skyrius("9. noexcept specifikatorius (svarbu std::vector spartai)");
+    skyrius("C5. noexcept specifikatorius");
     {
         tikrink(std::is_nothrow_move_constructible<studentas>::value,
-            "move konstruktorius yra noexcept");
+            "studentas move konstruktorius yra noexcept");
         tikrink(std::is_nothrow_move_assignable<studentas>::value,
-            "move priskyrimas yra noexcept");
+            "studentas move priskyrimas yra noexcept");
     }
 
-    skyrius("10. Destruktorius");
+    skyrius("C6. Destruktorius ir naikinimo tvarka");
     {
-        const int priesBloka = studentas::gyvuObjektu;
+        const int priesStudentu = studentas::gyvuStudentu;
+        const int priesZmoniu = zmogus::gyvuZmoniu;
         {
             studentas a = kurkTestini();
             studentas b = kurkTestini();
             studentas c(a);
-            tikrink(studentas::gyvuObjektu == priesBloka + 3,
-                "sukurti 3 objektai — skaitiklis padidejo 3");
+            tikrink(studentas::gyvuStudentu == priesStudentu + 3,
+                "sukurti 3 studentai — studentu skaitiklis padidejo 3");
+            tikrink(zmogus::gyvuZmoniu == priesZmoniu + 3,
+                "kartu sukurtos 3 zmogus bazines dalys");
         }
-        tikrink(studentas::gyvuObjektu == priesBloka,
-            "isejus is bloko destruktorius sumazino skaitikli iki pradinio");
+        tikrink(studentas::gyvuStudentu == priesStudentu,
+            "~studentas() sumazino studentu skaitikli iki pradinio");
+        tikrink(zmogus::gyvuZmoniu == priesZmoniu,
+            "~zmogus() sumazino zmoniu skaitikli iki pradinio");
     }
 
     // ===================================================
-    // 3. ĮVESTIES / IŠVESTIES OPERATORIAI
+    // D. IVESTIES / ISVESTIES OPERATORIAI (patikra is v1.2)
     // ===================================================
-    skyrius("11. Ivesties operatorius >>");
+    skyrius("D1. Ivesties operatorius >>");
     {
         std::istringstream iss("Ona Onaite 10 9 8 6");
         studentas s;
@@ -231,7 +362,7 @@ bool testStudentasKlase()
         tikrink(s.egzaminas() == 6, "egzaminas = 6 (paskutinis skaicius)");
     }
 
-    skyrius("12. Isvesties operatorius <<");
+    skyrius("D2. Isvesties operatorius <<");
     {
         studentas s = kurkTestini();
         s.calculateGalutinis();
@@ -247,7 +378,7 @@ bool testStudentasKlase()
         tikrink(rez.size() >= 60, "isvestis suformatuota stulpeliais");
     }
 
-    skyrius("13. Ivestis is failo (parseFromLine)");
+    skyrius("D3. Ivestis is failo (parseFromLine)");
     {
         studentas s;
         s.parseFromLine("Antanas Antanaitis 7 8 9 10 5", 4, 1);
@@ -268,7 +399,7 @@ bool testStudentasKlase()
         tikrink(metaTrukstama, "meta runtime_error, kai truksta duomenu");
     }
 
-    skyrius("14. Isvestis i faila (appendListTo)");
+    skyrius("D4. Isvestis i faila (appendListTo)");
     {
         studentas s("Rasa", "Rasaite", { 6, 7, 8 }, 9);
 
@@ -281,7 +412,6 @@ bool testStudentasKlase()
         tikrink(buferis.size() == 25 + 25 + 4 * 10 + 1,
             "eilutes ilgis atitinka formatavima (25+25+4*10+1)");
 
-        // Ar isvesta eilute gali buti nuskaityta atgal?
         studentas s2;
         s2.parseFromLine(buferis, 3, 1);
         tikrink(s2.vardas() == s.vardas() && s2.nd() == s.nd() &&
@@ -290,9 +420,9 @@ bool testStudentasKlase()
     }
 
     // ===================================================
-    // 4. PAPILDOMI OPERATORIAI
+    // E. PAPILDOMI OPERATORIAI (patikra is v1.2)
     // ===================================================
-    skyrius("15. Lyginimo operatoriai == ir !=");
+    skyrius("E1. Lyginimo operatoriai == ir !=");
     {
         studentas a("Jonas", "Jonaitis", { 5, 6 }, 7);
         studentas b("Jonas", "Jonaitis", { 5, 6 }, 7);
@@ -303,7 +433,7 @@ bool testStudentasKlase()
         tikrink(!(a == c), "== grazina false skirtingiems");
     }
 
-    skyrius("16. Rikiavimo operatoriai < ir >");
+    skyrius("E2. Rikiavimo operatoriai < ir >");
     {
         studentas a("Jonas", "Adamkus", { 5 }, 7);
         studentas b("Jonas", "Zukauskas", { 5 }, 7);
@@ -311,18 +441,16 @@ bool testStudentasKlase()
         tikrink(a < b, "Adamkus < Zukauskas (pagal pavarde)");
         tikrink(b > a, "Zukauskas > Adamkus");
 
-        // Vienodos pavardes — lyginama pagal varda
         studentas c("Antanas", "Petraitis", { 5 }, 7);
         studentas d("Zigmas", "Petraitis", { 5 }, 7);
         tikrink(c < d, "esant vienodoms pavardems lyginama pagal varda");
 
-        // Ar veikia su std::sort?
         std::vector<studentas> v = { b, a };
         std::sort(v.begin(), v.end());
         tikrink(v[0].pavarde() == "Adamkus", "std::sort su operator< veikia");
     }
 
-    skyrius("17. Indeksavimo operatorius []");
+    skyrius("E3. Indeksavimo operatorius []");
     {
         studentas s("Jonas", "Jonaitis", { 3, 6, 9 }, 10);
 
@@ -336,20 +464,18 @@ bool testStudentasKlase()
         tikrink(metaUzRibu, "meta out_of_range, kai indeksas uz ribu");
     }
 
-    skyrius("18. Skaiciavimo metodas calculateGalutinis");
+    skyrius("E4. Skaiciavimo metodas calculateGalutinis");
     {
         // ND: 2,4,6,8,10 -> vidurkis 6.0, mediana 6.0
         studentas s("Testas", "Testaitis", { 2, 4, 6, 8, 10 }, 5);
         s.calculateGalutinis();
 
-        // 0.4*6.0 + 0.6*5 = 2.4 + 3.0 = 5.4
         tikrink(std::abs(s.galutinisVid() - 5.4) < 1e-9,
             "galutinisVid = 5.4 (0.4*6.0 + 0.6*5)");
         tikrink(std::abs(s.galutinisMed() - 5.4) < 1e-9,
             "galutinisMed = 5.4 (mediana 6.0)");
 
-        // Nelyginis vs lyginis medianos atvejis
-        // ND: 1,2,3,4 -> vidurkis 2.5, mediana (2+3)/2 = 2.5
+        // Lyginis medianos atvejis: 1,2,3,4 -> (2+3)/2 = 2.5
         studentas s2("Testas", "Testaitis", { 1, 2, 3, 4 }, 10);
         s2.calculateGalutinis();
         tikrink(std::abs(s2.galutinisMed() - (0.4 * 2.5 + 0.6 * 10)) < 1e-9,
@@ -365,15 +491,15 @@ bool testStudentasKlase()
             "tuscias ND sarasas: galutinis = 0.6*8 = 4.8");
     }
 
-    skyrius("19. Set'eriai ir isvalyk");
+    skyrius("E5. Set'eriai ir isvalyk");
     {
         studentas s;
-        s.setVardas("Naujas");
-        s.setPavarde("Naujaitis");
-        s.setNd({ 5, 6, 7 });
-        s.setEgzaminas(9);
+        s.setVardas("Naujas");          // paveldetas is zmogus
+        s.setPavarde("Naujaitis");      // paveldetas is zmogus
+        s.setNd({ 5, 6, 7 });           // studentas metodas
+        s.setEgzaminas(9);              // studentas metodas
 
-        tikrink(s.vardas() == "Naujas", "setVardas veikia");
+        tikrink(s.vardas() == "Naujas", "paveldetas setVardas veikia");
         tikrink(s.nd().size() == 3, "setNd veikia");
         tikrink(s.egzaminas() == 9, "setEgzaminas veikia");
 
@@ -387,10 +513,10 @@ bool testStudentasKlase()
 
         s.isvalyk();
         tikrink(s.vardas().empty() && s.nd().empty() && s.egzaminas() == 0,
-            "isvalyk() istustina objekta");
+            "isvalyk() istustina ir bazines, ir isvestines klases laukus");
     }
 
-    skyrius("20. Veikimas konteineriuose (move semantika)");
+    skyrius("E6. Veikimas konteineriuose (move semantika)");
     {
         std::vector<studentas> v;
         v.reserve(4);
@@ -401,21 +527,51 @@ bool testStudentasKlase()
 
         tikrink(v.size() == 4, "4 objektai idėti i vektoriu");
 
-        // Perskirstymas — turi naudoti move, ne copy
         v.reserve(100);
         tikrink(v[0].vardas() == "Vardas0" && v[3].vardas() == "Vardas3",
             "duomenys islieka po vektoriaus perskirstymo");
 
-        // Perkelimas tarp konteineriu
         std::vector<studentas> v2 = std::move(v);
         tikrink(v2.size() == 4, "vektorius perkeltas su std::move");
         tikrink(v2[2].vardas() == "Vardas2", "duomenys teisingi po perkelimo");
     }
 
+    skyrius("E7. Polimorfinis konteineris (nauja v1.5)");
+    {
+        // Konteineris bazines klases rodykliu — leidzia laikyti
+        // skirtingu isvestiniu klasiu objektus vienoje vietoje
+        std::vector<std::unique_ptr<zmogus>> zmones;
+        zmones.push_back(std::make_unique<studentas>(
+            "Pirmas", "Pirmaitis", std::vector<int>{ 10, 10 }, 10));
+        zmones.push_back(std::make_unique<studentas>(
+            "Antras", "Antraitis", std::vector<int>{ 1, 1 }, 1));
+
+        for (auto& z : zmones) {
+            studentas* sp = dynamic_cast<studentas*>(z.get());
+            if (sp) sp->calculateGalutinis();
+        }
+
+        tikrink(zmones.size() == 2, "polimorfiniame konteineryje 2 objektai");
+        tikrink(zmones[0]->tipas() == "Studentas", "virtualus tipas() veikia");
+        tikrink(std::abs(zmones[0]->galutinis() - 10.0) < 1e-9,
+            "pirmojo galutinis() = 10.0");
+        tikrink(std::abs(zmones[1]->galutinis() - 1.0) < 1e-9,
+            "antrojo galutinis() = 1.0");
+
+        // Isvedimas per polimorfini operator<<
+        std::ostringstream oss;
+        for (const auto& z : zmones)
+            oss << *z << "\n";
+        tikrink(oss.str().find("Pirmas") != std::string::npos &&
+            oss.str().find("Antras") != std::string::npos,
+            "polimorfinis operator<< isveda visus objektus");
+    }
+
     // ===================================================
     // Rezultatai
     // ===================================================
-    const int galutinisSkaicius = studentas::gyvuObjektu;
+    const int galutinisStudentu = studentas::gyvuStudentu;
+    const int galutinisZmoniu = zmogus::gyvuZmoniu;
 
     std::cout << "\n===============================================\n";
     std::cout << " REZULTATAI\n";
@@ -424,11 +580,13 @@ bool testStudentasKlase()
     std::cout << "  Krito:   " << testuKrito << "\n";
     std::cout << "  Is viso: " << (testuPraejo + testuKrito) << "\n";
     std::cout << "-----------------------------------------------\n";
-    std::cout << "  Objektu nutekejimo patikra: "
-        << (galutinisSkaicius == pradinisSkaicius
-            ? "OK (visi objektai sunaikinti)"
-            : "KLAIDA (liko nesunaikintu objektu)") << "\n";
+    std::cout << "  studentas objektu nutekejimas: "
+        << (galutinisStudentu == pradinisStudentu ? "OK" : "KLAIDA") << "\n";
+    std::cout << "  zmogus objektu nutekejimas:    "
+        << (galutinisZmoniu == pradinisZmoniu ? "OK" : "KLAIDA") << "\n";
     std::cout << "===============================================\n\n";
 
-    return testuKrito == 0 && galutinisSkaicius == pradinisSkaicius;
+    return testuKrito == 0
+        && galutinisStudentu == pradinisStudentu
+        && galutinisZmoniu == pradinisZmoniu;
 }
