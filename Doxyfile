@@ -1,0 +1,161 @@
+# =====================================================================
+# Doxyfile — Studentų informacinės sistemos dokumentacijos konfigūracija
+#
+# Paleidimas (iš repozitorijos šaknies):
+#     doxygen Doxyfile
+#
+# Rezultatas:
+#     docs/doxygen/html/   — HTML dokumentacija (atidaryti index.html)
+#     docs/doxygen/latex/  — LaTeX šaltiniai PDF generavimui
+#
+# PDF generavimas (reikia TeX Live / MiKTeX):
+#     cd docs/doxygen/latex && make          (Linux/Mac)
+#     cd docs\doxygen\latex && make.bat      (Windows)
+# =====================================================================
+
+#---------------------------------------------------------------------
+# Projekto informacija
+#---------------------------------------------------------------------
+PROJECT_NAME           = "Studentu informacine sistema"
+PROJECT_NUMBER         = v2.0
+PROJECT_BRIEF          = "VU ISI Objektinio programavimo kurso laboratoriniai darbai"
+OUTPUT_DIRECTORY       = docs/doxygen
+CREATE_SUBDIRS         = NO
+OUTPUT_LANGUAGE        = Lithuanian
+
+#---------------------------------------------------------------------
+# Įvesties failai
+#---------------------------------------------------------------------
+INPUT                  = OOP_2 \
+                         tests \
+                         README.md
+FILE_PATTERNS          = *.h \
+                         *.cpp \
+                         *.md
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */build/* \
+                         */data/* \
+                         */catch.hpp
+USE_MDFILE_AS_MAINPAGE = README.md
+
+#---------------------------------------------------------------------
+# Ką dokumentuoti
+#---------------------------------------------------------------------
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+INTERNAL_DOCS          = YES
+SHOW_INCLUDE_FILES     = YES
+SHOW_USED_FILES        = YES
+
+#---------------------------------------------------------------------
+# Šaltinio kodo naršymas
+#---------------------------------------------------------------------
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+VERBATIM_HEADERS       = YES
+
+#---------------------------------------------------------------------
+# Formatavimas
+#---------------------------------------------------------------------
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = YES
+MULTILINE_CPP_IS_BRIEF = NO
+INHERIT_DOCS           = YES
+TAB_SIZE               = 4
+MARKDOWN_SUPPORT       = YES
+AUTOLINK_SUPPORT       = YES
+BUILTIN_STL_SUPPORT    = YES
+SORT_MEMBER_DOCS       = NO
+SORT_BRIEF_DOCS        = NO
+
+#---------------------------------------------------------------------
+# HTML išvestis
+#---------------------------------------------------------------------
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+HTML_DYNAMIC_SECTIONS  = YES
+GENERATE_TREEVIEW      = YES
+TREEVIEW_WIDTH         = 280
+SEARCHENGINE           = YES
+DISABLE_INDEX          = NO
+
+#---------------------------------------------------------------------
+# LaTeX / PDF išvestis
+#---------------------------------------------------------------------
+GENERATE_LATEX         = YES
+LATEX_OUTPUT           = latex
+LATEX_CMD_NAME         = pdflatex
+MAKEINDEX_CMD_NAME     = makeindex
+COMPACT_LATEX          = NO
+PAPER_TYPE             = a4
+PDF_HYPERLINKS         = YES
+USE_PDFLATEX           = YES
+LATEX_BATCHMODE        = YES
+LATEX_HIDE_INDICES     = NO
+
+#---------------------------------------------------------------------
+# Kiti formatai — išjungti
+#---------------------------------------------------------------------
+GENERATE_RTF           = NO
+GENERATE_MAN           = NO
+GENERATE_XML           = NO
+GENERATE_DOCBOOK       = NO
+GENERATE_AUTOGEN_DEF   = NO
+
+#---------------------------------------------------------------------
+# Diagramos
+#
+# HAVE_DOT reikalauja Graphviz (https://graphviz.org/download/).
+# Jei Graphviz neįdiegtas, nustatykite HAVE_DOT = NO —
+# paveldėjimo diagramos bus generuojamos tekstiniu pavidalu.
+#---------------------------------------------------------------------
+CLASS_DIAGRAMS         = YES
+HAVE_DOT               = YES
+DOT_NUM_THREADS        = 0
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+UML_LOOK               = YES
+UML_LIMIT_NUM_FIELDS   = 50
+TEMPLATE_RELATIONS     = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+GRAPHICAL_HIERARCHY    = YES
+DIRECTORY_GRAPH        = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOT_GRAPH_MAX_NODES    = 100
+MAX_DOT_GRAPH_DEPTH    = 0
+DOT_TRANSPARENT        = NO
+DOT_CLEANUP            = YES
+
+#---------------------------------------------------------------------
+# Preprocesorius
+#---------------------------------------------------------------------
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES
+PREDEFINED             = _WIN32
+
+#---------------------------------------------------------------------
+# Įspėjimai
+#---------------------------------------------------------------------
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_LOGFILE           = docs/doxygen/warnings.log
