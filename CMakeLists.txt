@@ -24,7 +24,7 @@ add_library(studentaiLib STATIC
 target_include_directories(studentaiLib PUBLIC ${CMAKE_SOURCE_DIR}/OOP_2)
 
 if(MSVC)
-    target_compile_options(studentaiLib PRIVATE /W4)
+    target_compile_options(studentaiLib PRIVATE /W4 /utf-8)
 else()
     target_compile_options(studentaiLib PRIVATE -Wall -Wextra)
 endif()
@@ -46,7 +46,7 @@ add_executable(programa
 target_link_libraries(programa PRIVATE studentaiLib)
 
 if(MSVC)
-    target_compile_options(programa PRIVATE /W4 /O2)
+    target_compile_options(programa PRIVATE /W4 /O2 /utf-8)
 else()
     target_compile_options(programa PRIVATE -Wall -Wextra -O2)
 endif()
@@ -78,7 +78,7 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/tests/catch.hpp)
     target_include_directories(unitTests PRIVATE ${CMAKE_SOURCE_DIR}/tests)
 
     if(MSVC)
-        target_compile_options(unitTests PRIVATE /W4)
+        target_compile_options(unitTests PRIVATE /W4 /utf-8)
     else()
         target_compile_options(unitTests PRIVATE -Wall -Wextra)
     endif()
