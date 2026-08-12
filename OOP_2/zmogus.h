@@ -9,7 +9,7 @@
  * @file zmogus.h
  * @brief Abstrakti bazinė klasė, aprašanti bendrus žmogaus duomenis.
  * @author Marius Augustinas
- * @date 2025
+ * @date 2026
  */
 
  /**
