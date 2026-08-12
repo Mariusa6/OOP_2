@@ -1,0 +1,3 @@
+warning: source 'tests' is not a readable file or directory... skipping.
+graph_legend:3: warning: Found unknown command '\kodo'
+graph_legend:38: warning: unexpected command endcode

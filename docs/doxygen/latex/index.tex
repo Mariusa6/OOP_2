@@ -1,0 +1,523 @@
+\chapter{Studentų Informacinė Sistema OOP\+\_\+\+Marius\+\_\+\+Augustinas }
+\hypertarget{index}{}\label{index}\index{Studentų Informacinė Sistema OOP\_Marius\_Augustinas@{Studentų Informacinė Sistema OOP\_Marius\_Augustinas}}
+\label{index_md__r_e_a_d_m_e}%
+\Hypertarget{index_md__r_e_a_d_m_e}%
+
+
+VU ISI Objektinio programavimo kurso laboratoriniai darbai
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md2}{}\doxysection{\texorpdfstring{Versijų istorija}{Versijų istorija}}\label{index_autotoc_md2}
+
+\begin{DoxyTable}{2}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Versija  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Pagrindiniai pakeitimai  \\
+{\bfseries{v0.\+1}}  &Pradinė realizacija — {\ttfamily std::\+vector}, rankinis įvedimas  \\
+{\bfseries{v0.\+2}}  &Failo skaitymas ir rašymas, rikiavimas, abu galutiniai balai  \\
+{\bfseries{v0.\+3}}  &Kodas suskaidytas į modulius, išimčių valdymas ({\ttfamily try}/\+{\ttfamily catch})  \\
+{\bfseries{v0.\+4}}  &Studentų skirstymas į dvi grupes, spartos testavimas  \\
+{\bfseries{v0.\+5}}  &{\ttfamily template\texorpdfstring{$<$}{<}typename Container\texorpdfstring{$>$}{>}} — {\ttfamily vector}/\+{\ttfamily list}/\+{\ttfamily deque}  \\
+{\bfseries{v1.\+0}}  &Trijų skirstymo strategijų palyginimas, atminties analizė  \\
+{\bfseries{v1.\+1}}  &{\ttfamily struct} → {\ttfamily class}; I/\+O optimizacija; optimizavimo flag\textquotesingle{}ų tyrimas  \\
+{\bfseries{v1.\+2}}  &Pilna {\bfseries{Rule of Five}}, perdengti operatoriai, klasės metodų testas  \\
+{\bfseries{v1.\+5}}  &{\bfseries{Abstrakti bazinė klasė {\ttfamily \doxylink{classzmogus}{zmogus}}}} + išvestinė {\ttfamily \doxylink{classstudentas}{studentas}}; polimorfizmas; testai papildyti paveldėjimo patikromis  \\
+\end{DoxyTable}
+
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md4}{}\doxysection{\texorpdfstring{v1.\+5 — Abstrakti klasė ir paveldėjimas}{v1.\+5 — Abstrakti klasė ir paveldėjimas}}\label{index_autotoc_md4}
+\hypertarget{index_autotoc_md5}{}\doxysubsection{\texorpdfstring{Techninė aplinka}{Techninė aplinka}}\label{index_autotoc_md5}
+
+\begin{DoxyTable}{2}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Parametras  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Reikšmė  \\
+Procesorius  &Intel Core i7-\/8565U (4 branduoliai /\+ 8 gijų, iki 4.\+6 GHz)  \\
+RAM  &8 GB DDR4  \\
+Saugykla  &250 GB SSD  \\
+OS  &Windows 11  \\
+Kompiliatorius  &Visual Studio 2022, MSVC ({\ttfamily cl.\+exe}), x64 Release, {\ttfamily /\+std:\+c++17}  \\
+\end{DoxyTable}
+
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md7}{}\doxysubsection{\texorpdfstring{1. Klasių hierarchija}{1. Klasių hierarchija}}\label{index_autotoc_md7}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{┌─────────────────────────────┐}
+\DoxyCodeLine{│\ \ \ zmogus\ \ (ABSTRAKTI)\ \ \ \ \ \ \ │}
+\DoxyCodeLine{├─────────────────────────────┤}
+\DoxyCodeLine{│\ protected:\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ vardas\_\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ pavarde\_\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{├─────────────────────────────┤}
+\DoxyCodeLine{│\ public:\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ virtual\ \string~zmogus()\ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ vardas()\ /\ pavarde()\ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ pilnasVardas()\ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ setVardas()\ /\ setPavarde()│}
+\DoxyCodeLine{│\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ =\ 0\ \ galutinis()\ \ \ \ \ \ \ \ \ \ │\ \ ←\ grynai\ virtualūs}
+\DoxyCodeLine{│\ \ \ =\ 0\ \ print()\ \ \ \ \ \ \ \ \ \ \ \ \ \ │\ \ \ \ \ (pure\ virtual)}
+\DoxyCodeLine{│\ \ \ =\ 0\ \ read()\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ =\ 0\ \ tipas()\ \ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{└──────────────┬──────────────┘}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ │\ public\ paveldėjimas}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ▼}
+\DoxyCodeLine{┌─────────────────────────────┐}
+\DoxyCodeLine{│\ \ \ studentas\ \ (KONKRETI)\ \ \ \ \ │}
+\DoxyCodeLine{├─────────────────────────────┤}
+\DoxyCodeLine{│\ private:\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ nd\_\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ egzaminas\_\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ galutinisVid\_\ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ galutinisMed\_\ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{├─────────────────────────────┤}
+\DoxyCodeLine{│\ public:\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ Rule\ of\ Five\ (5\ metodai)\ \ │}
+\DoxyCodeLine{│\ \ \ override\ galutinis()\ \ \ \ \ \ │\ \ ←\ realizuoti}
+\DoxyCodeLine{│\ \ \ override\ print()\ \ \ \ \ \ \ \ \ \ │\ \ \ \ \ virtualūs}
+\DoxyCodeLine{│\ \ \ override\ read()\ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ override\ tipas()\ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ nd()\ /\ egzaminas()\ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ parseFromLine()\ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ appendListTo()\ \ \ \ \ \ \ \ \ \ \ \ │}
+\DoxyCodeLine{│\ \ \ ==,\ !=,\ <,\ >,\ [],\ bool\ \ \ \ │}
+\DoxyCodeLine{└─────────────────────────────┘}
+
+\end{DoxyCode}
+
+
+ {\itshape 1 pav. Klasių hierarchija}
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md9}{}\doxysubsection{\texorpdfstring{2. Abstrakti klasė {\ttfamily zmogus}}{2. Abstrakti klasė {\ttfamily zmogus}}}\label{index_autotoc_md9}
+\hypertarget{index_autotoc_md10}{}\doxysubsubsection{\texorpdfstring{Kodėl klasė yra abstrakti}{Kodėl klasė yra abstrakti}}\label{index_autotoc_md10}
+Klasė padaryta abstrakti {\bfseries{dviem nepriklausomais mechanizmais}} — tai suteikia dvigubą apsaugą:\+
+
+{\bfseries{1. Grynai virtualūs (pure virtual) metodai}}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{virtual}\ \textcolor{keywordtype}{double}\ galutinis()\ \textcolor{keyword}{const}\ =\ 0;}
+\DoxyCodeLine{\textcolor{keyword}{virtual}\ \textcolor{keywordtype}{void}\ print(std::ostream\&\ os)\ \textcolor{keyword}{const}\ =\ 0;}
+\DoxyCodeLine{\textcolor{keyword}{virtual}\ std::istream\&\ read(std::istream\&\ is)\ =\ 0;}
+\DoxyCodeLine{\textcolor{keyword}{virtual}\ std::string\ tipas()\ \textcolor{keyword}{const}\ =\ 0;}
+
+\end{DoxyCode}
+
+
+Sintaksė {\ttfamily = 0} reiškia, kad metodas {\bfseries{neturi realizacijos}} bazinėje klasėje. Kompiliatorius neleidžia kurti objektų iš klasės, kuri turi bent vieną neapibrėžtą virtualų metodą — techniškai todėl, kad virtualių funkcijų lentelėje (vtable) toks įrašas rodo į nieką.
+
+{\bfseries{2. {\ttfamily protected} konstruktoriai}}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{protected}:}
+\DoxyCodeLine{\ \ \ \ \doxymbox{\hyperlink{classzmogus}{zmogus}}();}
+\DoxyCodeLine{\ \ \ \ \doxymbox{\hyperlink{classzmogus}{zmogus}}(\textcolor{keyword}{const}\ std::string\&\ vardas,\ \textcolor{keyword}{const}\ std::string\&\ pavarde);}
+\DoxyCodeLine{\ \ \ \ \doxymbox{\hyperlink{classzmogus}{zmogus}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classzmogus}{zmogus}}\&\ other);}
+\DoxyCodeLine{\ \ \ \ \doxymbox{\hyperlink{classzmogus}{zmogus}}(\doxymbox{\hyperlink{classzmogus}{zmogus}}\&\&\ other)\ \textcolor{keyword}{noexcept};}
+
+\end{DoxyCode}
+
+
+Konstruktoriai prieinami tik išvestinėms klasėms. Tai antras apsaugos sluoksnis:\+ net jei kas nors ateityje pašalintų grynai virtualius metodus, objekto vis tiek nepavyktų sukurti iš išorės.\hypertarget{index_autotoc_md11}{}\doxysubsubsection{\texorpdfstring{Demonstracija — objekto sukurti neįmanoma}{Demonstracija — objekto sukurti neįmanoma}}\label{index_autotoc_md11}
+Šis kodas {\bfseries{nesikompiliuoja}}:\+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\doxymbox{\hyperlink{classzmogus}{zmogus}}\ z;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ ❌\ error\ C2259:\ 'zmogus':\ cannot\ instantiate}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ \ \ \ abstract\ class}}
+\DoxyCodeLine{\doxymbox{\hyperlink{classzmogus}{zmogus}}*\ p\ =\ \textcolor{keyword}{new}\ \doxymbox{\hyperlink{classzmogus}{zmogus}}();\ \ \ \ \ \ \ \ \textcolor{comment}{//\ ❌\ ta\ pati\ klaida}}
+\DoxyCodeLine{std::vector<zmogus>\ v(10);\ \ \ \ \ \ \ \textcolor{comment}{//\ ❌\ ta\ pati\ klaida}}
+
+\end{DoxyCode}
+
+
+ {\itshape 2 pav. Kompiliatoriaus klaida bandant sukurti {\ttfamily \doxylink{classzmogus}{zmogus}} objektą}
+
+Veikiantys variantai:\+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\doxymbox{\hyperlink{classstudentas}{studentas}}\ s;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ ✅\ konkreti\ klasė}}
+\DoxyCodeLine{\doxymbox{\hyperlink{classzmogus}{zmogus}}\&\ z\ =\ s;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ ✅\ nuoroda\ į\ bazinę}}
+\DoxyCodeLine{\doxymbox{\hyperlink{classzmogus}{zmogus}}*\ p\ =\ \&s;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ ✅\ rodyklė\ į\ bazinę}}
+\DoxyCodeLine{std::unique\_ptr<zmogus>\ up\ =}
+\DoxyCodeLine{\ \ \ \ std::make\_unique<studentas>();\ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ ✅\ polimorfinė\ nuosavybė}}
+\DoxyCodeLine{std::vector<std::unique\_ptr<zmogus>>\ zmones;\ \ \ \ \textcolor{comment}{//\ ✅\ polimorfinis\ konteineris}}
+
+\end{DoxyCode}
+
+
+Testas tai patikrina {\bfseries{statiškai}}, kompiliavimo metu:\+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{tikrink(std::is\_abstract<zmogus>::value,}
+\DoxyCodeLine{\ \ \ \ \textcolor{stringliteral}{"{}std::is\_abstract<zmogus>\ =\ true"{}});}
+\DoxyCodeLine{tikrink(!std::is\_default\_constructible<zmogus>::value,}
+\DoxyCodeLine{\ \ \ \ \textcolor{stringliteral}{"{}zmogus\ objekto\ sukurti\ NEIMANOMA"{}});}
+
+\end{DoxyCode}
+\hypertarget{index_autotoc_md12}{}\doxysubsubsection{\texorpdfstring{Virtualus destruktorius}{Virtualus destruktorius}}\label{index_autotoc_md12}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keyword}{public}:}
+\DoxyCodeLine{\ \ \ \ \textcolor{keyword}{virtual}\ \doxymbox{\hyperlink{classzmogus}{\string~zmogus}}();}
+
+\end{DoxyCode}
+
+
+Būtinas polimorfizmui. Be {\ttfamily virtual} kvalifikatoriaus šis kodas sukeltų atminties nutekėjimą:\+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\doxymbox{\hyperlink{classzmogus}{zmogus}}*\ p\ =\ \textcolor{keyword}{new}\ \doxymbox{\hyperlink{classstudentas}{studentas}}(\textcolor{stringliteral}{"{}Jonas"{}},\ \textcolor{stringliteral}{"{}Jonaitis"{}},\ \{5,\ 5\},\ 10);}
+\DoxyCodeLine{\textcolor{keyword}{delete}\ p;\ \ \ \textcolor{comment}{//\ be\ virtual:\ kviečiamas\ TIK\ \string~zmogus()}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ \ \ \ nd\_\ vektorius\ NEATLAISVINAMAS}}
+
+\end{DoxyCode}
+
+
+Su {\ttfamily virtual} naikinimo tvarka teisinga:\+ {\ttfamily \texorpdfstring{$\sim$}{\string~}studentas()} → {\ttfamily \texorpdfstring{$\sim$}{\string~}zmogus()}.
+
+Testas tai tikrina per objektų skaitiklius:\+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\ \ \ \ std::unique\_ptr<zmogus>\ p\ =\ std::make\_unique<studentas>(...);}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ studentas::gyvuStudentu\ padidėjo}}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ zmogus::gyvuZmoniu\ padidėjo}}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{\textcolor{comment}{//\ abu\ skaitikliai\ grįžo\ į\ pradinę\ reikšmę\ →\ abu\ destruktoriai\ iškviesti}}
+
+\end{DoxyCode}
+
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md14}{}\doxysubsection{\texorpdfstring{3. Išvestinė klasė {\ttfamily studentas}}{3. Išvestinė klasė {\ttfamily studentas}}}\label{index_autotoc_md14}
+\hypertarget{index_autotoc_md15}{}\doxysubsubsection{\texorpdfstring{Ką paveldi}{Ką paveldi}}\label{index_autotoc_md15}
+
+\begin{DoxyTable}{2}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Iš {\ttfamily \doxylink{classzmogus}{zmogus}}  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Tipas  \\
+{\ttfamily vardas\+\_\+}, {\ttfamily pavarde\+\_\+}  &{\ttfamily protected} laukai — tiesiogiai prieinami  \\
+{\ttfamily vardas()}, {\ttfamily pavarde()}, {\ttfamily pilnas\+Vardas()}  &Get\textquotesingle{}eriai  \\
+{\ttfamily set\+Vardas()}, {\ttfamily set\+Pavarde()}  &Set\textquotesingle{}eriai su validacija  \\
+{\ttfamily virtual \texorpdfstring{$\sim$}{\string~}zmogus()}  &Virtualus destruktorius  \\
+\end{DoxyTable}
+\hypertarget{index_autotoc_md16}{}\doxysubsubsection{\texorpdfstring{Ką realizuoja ({\ttfamily override})}{Ką realizuoja ({\ttfamily override})}}\label{index_autotoc_md16}
+
+\begin{DoxyTable}{2}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Metodas  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Realizacija {\ttfamily \doxylink{classstudentas}{studentas}} klasėje  \\
+{\ttfamily galutinis()}  &Grąžina {\ttfamily galutinis\+Vid\+\_\+}  \\
+{\ttfamily print(os)}  &Suformatuota eilutė:\+ vardas, pavardė, abu galutiniai balai  \\
+{\ttfamily read(is)}  &Kviečia {\ttfamily read\+Studentas(is)}  \\
+{\ttfamily tipas()}  &Grąžina {\ttfamily "{}Studentas"{}}  \\
+\end{DoxyTable}
+\hypertarget{index_autotoc_md17}{}\doxysubsubsection{\texorpdfstring{Ką prideda}{Ką prideda}}\label{index_autotoc_md17}
+Savo duomenis ({\ttfamily nd\+\_\+}, {\ttfamily egzaminas\+\_\+}, {\ttfamily galutinis\+Vid\+\_\+}, {\ttfamily galutinis\+Med\+\_\+}), greitą I/\+O ({\ttfamily parse\+From\+Line}, {\ttfamily append\+List\+To}), skaičiavimą ({\ttfamily \doxylink{calculate_8h_a075f16863229a04047d7d1e57c11e7fd}{calculate\+Galutinis}}) ir perdengtus operatorius ({\ttfamily ==}, {\ttfamily !=}, {\ttfamily \texorpdfstring{$<$}{<}}, {\ttfamily \texorpdfstring{$>$}{>}}, {\ttfamily \+[]\+}, {\ttfamily bool}).
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md19}{}\doxysubsection{\texorpdfstring{4. Rule of Five su paveldėjimu}{4. Rule of Five su paveldėjimu}}\label{index_autotoc_md19}
+Visos penkios funkcijos išlaikytos iš v1.\+2, bet {\bfseries{kiekviena papildyta bazinės klasės kvietimu}}. Tai dažniausia paveldėjimo klaida — pamiršus šį kvietimą, {\ttfamily vardas\+\_\+} ir {\ttfamily pavarde\+\_\+} liktų tušti.
+
+
+\begin{DoxyTable}{2}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Metodas  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Bazinės klasės kvietimas  \\
+Kopijavimo konstruktorius  &{\ttfamily :\+ \doxylink{classzmogus}{zmogus(other)}}  \\
+Kopijavimo priskyrimas  &{\ttfamily zmogus::\+operator=(other);}  \\
+Move konstruktorius  &{\ttfamily :\+ \doxylink{classzmogus}{zmogus(std::\+move(other))}}  \\
+Move priskyrimas  &{\ttfamily zmogus::\+operator=(std::\+move(other));}  \\
+Destruktorius  &Kviečiamas {\bfseries{automatiškai}} po {\ttfamily \texorpdfstring{$\sim$}{\string~}studentas()} kūno  \\
+\end{DoxyTable}
+\hypertarget{index_autotoc_md20}{}\doxysubsubsection{\texorpdfstring{Kodėl {\ttfamily std::\+move(other)} move konstruktoriuje}{Kodėl {\ttfamily std::\+move(other)} move konstruktoriuje}}\label{index_autotoc_md20}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\doxymbox{\hyperlink{classstudentas_a40a99ea5d527a3d443123f4785550787}{studentas::studentas}}(\doxymbox{\hyperlink{classstudentas}{studentas}}\&\&\ other)\ noexcept}
+\DoxyCodeLine{\ \ \ \ :\ \doxymbox{\hyperlink{classzmogus}{zmogus}}(std::move(other)),\ \ \ \textcolor{comment}{//\ ←\ std::move\ BŪTINAS}}
+\DoxyCodeLine{\ \ \ \ \ \ nd\_(std::move(other.nd\_)),}
+\DoxyCodeLine{\ \ \ \ \ \ ...}
+
+\end{DoxyCode}
+
+
+{\ttfamily other} yra {\bfseries{pavadintas}} kintamasis, todėl pats savaime yra lvalue — net jei jo tipas yra {\ttfamily \doxylink{classstudentas}{studentas}\&\&}. Be {\ttfamily std::\+move} būtų iškviestas {\ttfamily \doxylink{classzmogus}{zmogus}} {\bfseries{kopijavimo}}, ne perkėlimo konstruktorius, ir {\ttfamily vardas\+\_\+}/\+{\ttfamily pavarde\+\_\+} būtų kopijuojami.\hypertarget{index_autotoc_md21}{}\doxysubsubsection{\texorpdfstring{Kodėl kvalifikuotas {\ttfamily zmogus::\+operator=}}{Kodėl kvalifikuotas {\ttfamily zmogus::\+operator=}}}\label{index_autotoc_md21}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\doxymbox{\hyperlink{classstudentas}{studentas}}\&\ \doxymbox{\hyperlink{classstudentas_a1e06d5df5c12d5abcc50c71d5fc74dc2}{studentas::operator=}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classstudentas}{studentas}}\&\ other)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}\ (\textcolor{keyword}{this}\ ==\ \&other)\ \textcolor{keywordflow}{return}\ *\textcolor{keyword}{this};}
+\DoxyCodeLine{\ \ \ \ \doxymbox{\hyperlink{classzmogus_a40bfcbc64eea331b27604c3eb1831f4a}{zmogus::operator=}}(other);\ \ \ \textcolor{comment}{//\ ←\ kvalifikacija\ BŪTINA}}
+\DoxyCodeLine{\ \ \ \ ...}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Be {\ttfamily \doxylink{classzmogus}{zmogus}:\+:\+} prefikso kompiliatorius parinktų {\ttfamily \doxylink{classstudentas_a1e06d5df5c12d5abcc50c71d5fc74dc2}{studentas::\+operator=}} — įvyktų {\bfseries{begalinė rekursija}} ir stack overflow.\hypertarget{index_autotoc_md22}{}\doxysubsubsection{\texorpdfstring{Konstravimo ir naikinimo tvarka}{Konstravimo ir naikinimo tvarka}}\label{index_autotoc_md22}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Kūrimas:\ \ \ \ \ \ zmogus(...)\ \ →\ \ studentas(...)}
+\DoxyCodeLine{Naikinimas:\ \ \ \string~studentas()\ \ →\ \ \string~zmogus()}
+
+\end{DoxyCode}
+
+
+Bazinė dalis sukuriama pirma (išvestinė gali priklausyti nuo jos), o naikinama paskutinė.
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md24}{}\doxysubsection{\texorpdfstring{5. Polimorfizmas}{5. Polimorfizmas}}\label{index_autotoc_md24}
+\hypertarget{index_autotoc_md25}{}\doxysubsubsection{\texorpdfstring{Polimorfiniai I/\+O operatoriai}{Polimorfiniai I/\+O operatoriai}}\label{index_autotoc_md25}
+Operatoriai priima {\ttfamily \doxylink{classzmogus}{zmogus}\&} nuorodą, bet kviečia virtualius metodus:\+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{std::ostream\&\ \doxymbox{\hyperlink{zmogus_8cpp_aa13bdc9d741efbe2622274d92503d010}{operator<<}}(std::ostream\&\ os,\ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{classzmogus}{zmogus}}\&\ z)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\ \ \ \ z.\doxymbox{\hyperlink{classzmogus_a5647d3e65118f17a8b352171cf45551d}{print}}(os);\ \ \ \ \ \ \textcolor{comment}{//\ vykdymo\ metu\ parenkama\ studentas::print()}}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{return}\ os;}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{std::istream\&\ \doxymbox{\hyperlink{zmogus_8cpp_a83717bca17c74f44fccbc3a991026333}{operator>>}}(std::istream\&\ is,\ \doxymbox{\hyperlink{classzmogus}{zmogus}}\&\ z)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{return}\ z.\doxymbox{\hyperlink{classzmogus_aeb474769feaec888c17cb334db0d28bc}{read}}(is);\ \ \textcolor{comment}{//\ vykdymo\ metu\ parenkama\ studentas::read()}}
+\DoxyCodeLine{\}}
+
+\end{DoxyCode}
+
+
+Nauda:\+ pridėjus naują išvestinę klasę (pvz. {\ttfamily destytojas}), tie patys operatoriai veiks be jokių pakeitimų.\hypertarget{index_autotoc_md26}{}\doxysubsubsection{\texorpdfstring{Polimorfinis konteineris}{Polimorfinis konteineris}}\label{index_autotoc_md26}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{std::vector<std::unique\_ptr<zmogus>>\ zmones;}
+\DoxyCodeLine{zmones.push\_back(std::make\_unique<studentas>(\textcolor{stringliteral}{"{}Ona"{}},\ \textcolor{stringliteral}{"{}Onaite"{}},\ \{10,\ 10\},\ 10));}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordflow}{for}\ (\textcolor{keyword}{const}\ \textcolor{keyword}{auto}\&\ z\ :\ zmones)}
+\DoxyCodeLine{\ \ \ \ std::cout\ <<\ z-\/>\doxymbox{\hyperlink{classzmogus_a317aabc77d479a65f05f76803b820086}{tipas}}()\ <<\ \textcolor{stringliteral}{"{}:\ "{}}\ <<\ *z\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)n"{}};\ \ \ \textcolor{comment}{//\ virtualūs\ kvietimai}}
+
+\end{DoxyCode}
+
+
+ {\itshape 3 pav. Polimorfinis konteineris ir virtualūs metodai}
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md28}{}\doxysubsection{\texorpdfstring{6. Testų patikra}{6. Testų patikra}}\label{index_autotoc_md28}
+\hypertarget{index_autotoc_md29}{}\doxysubsubsection{\texorpdfstring{Testų struktūra}{Testų struktūra}}\label{index_autotoc_md29}
+Testas ({\ttfamily \doxylink{teststudentas_8cpp}{test\+Studentas.\+cpp}}, meniu punktas {\bfseries{9}}) suskirstytas į penkis skyrius. {\bfseries{A skyrius naujas v1.\+5}}, B–E — patikrinti v1.\+2 testai.
+
+
+\begin{DoxyTable}{3}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Skyrius  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Tema  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Testų  \\
+{\bfseries{A}}  &{\bfseries{Abstrakti klasė ir paveldėjimas}} {\itshape (nauja)}  &7 poskyriai  \\
+{\bfseries{B}}  &Konstruktoriai  &4 poskyriai  \\
+{\bfseries{C}}  &Rule of Five  &6 poskyriai  \\
+{\bfseries{D}}  &Įvesties /\+ išvesties operatoriai  &4 poskyriai  \\
+{\bfseries{E}}  &Papildomi operatoriai ir metodai  &7 poskyriai  \\
+\end{DoxyTable}
+\hypertarget{index_autotoc_md30}{}\doxysubsubsection{\texorpdfstring{A skyrius — nauji v1.\+5 testai}{A skyrius — nauji v1.\+5 testai}}\label{index_autotoc_md30}
+
+\begin{DoxyTable}{2}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Nr.  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Ką tikrina  \\
+A1  &{\ttfamily \doxylink{classzmogus}{zmogus}} yra abstrakti; jos objekto sukurti neįmanoma ({\ttfamily is\+\_\+abstract}, {\ttfamily is\+\_\+default\+\_\+constructible})  \\
+A2  &Paveldėjimo ryšys ({\ttfamily is\+\_\+base\+\_\+of}, {\ttfamily is\+\_\+convertible}, {\ttfamily has\+\_\+virtual\+\_\+destructor})  \\
+A3  &Paveldėti bazinės klasės metodai veikia ({\ttfamily vardas()}, {\ttfamily pilnas\+Vardas()}, {\ttfamily set\+Vardas()})  \\
+A4  &Polimorfizmas per {\ttfamily \doxylink{classzmogus}{zmogus}\&} nuorodą ir {\ttfamily unique\+\_\+ptr\texorpdfstring{$<$}{<}\doxylink{classzmogus}{zmogus}\texorpdfstring{$>$}{>}}; {\ttfamily dynamic\+\_\+cast}  \\
+A5  &Virtualus destruktorius — abu skaitikliai grįžta į pradinę reikšmę  \\
+A6  &Polimorfiniai {\ttfamily operator\texorpdfstring{$<$}{<}\texorpdfstring{$<$}{<}} /\+ {\ttfamily operator\texorpdfstring{$>$}{>}\texorpdfstring{$>$}{>}} per bazinės klasės nuorodą  \\
+\end{DoxyTable}
+\hypertarget{index_autotoc_md31}{}\doxysubsubsection{\texorpdfstring{B–E skyriai — v1.\+2 testų patikra}{B–E skyriai — v1.\+2 testų patikra}}\label{index_autotoc_md31}
+Visi v1.\+2 testai perkelti be pakeitimų loginėje dalyje, bet {\bfseries{papildyti paveldėjimo patikromis}}:\+
+
+
+\begin{DoxyTable}{2}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}v1.\+2 testas  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Kas pridėta v1.\+5  \\
+Kopijavimo konstruktorius  &Patikra, ar {\bfseries{bazinės klasės}} {\ttfamily vardas\+\_\+}/\+{\ttfamily pavarde\+\_\+} nukopijuoti  \\
+Kopijavimo priskyrimas  &Patikra, ar {\ttfamily \doxylink{classzmogus_a40bfcbc64eea331b27604c3eb1831f4a}{zmogus::\+operator=}} iškviestas  \\
+Move konstruktorius  &Patikra, ar bazinės klasės laukai {\bfseries{perkelti}}, ne nukopijuoti  \\
+Move priskyrimas  &Ta pati patikra  \\
+Destruktorius  &Tikrinami {\bfseries{abu}} skaitikliai ({\ttfamily gyvu\+Studentu} ir {\ttfamily gyvu\+Zmoniu})  \\
+Validacija  &Atskirai tikrinama, ką meta {\bfseries{bazinė}} ({\ttfamily invalid\+\_\+argument}) ir {\bfseries{išvestinė}} ({\ttfamily runtime\+\_\+error}) klasė  \\
+{\ttfamily isvalyk()}  &Patikra, ar ištuštinami {\bfseries{ir bazinės, ir išvestinės}} klasės laukai  \\
+\end{DoxyTable}
+\hypertarget{index_autotoc_md32}{}\doxysubsubsection{\texorpdfstring{Testų rezultatai}{Testų rezultatai}}\label{index_autotoc_md32}
+
+\begin{DoxyTable}{4}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Skyrius  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Testų  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Praėjo  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Krito  \\
+A — Abstrakti klasė ir paveldėjimas  &24  &24  &0  \\
+B — Konstruktoriai  &19  &19  &0  \\
+C — Rule of Five  &26  &26  &0  \\
+D — I/\+O operatoriai  &17  &17  &0  \\
+E — Papildomi operatoriai  &27  &27  &0  \\
+{\bfseries{Iš viso}}  &{\bfseries{113}}  &{\bfseries{113}}  &{\bfseries{0}}  \\
+\end{DoxyTable}
+
+
+\begin{quote}
+Skaičiai lentelėje užpildomi po testo paleidimo — programa juos išveda automatiškai. \end{quote}
+
+
+ {\itshape 4 pav. A skyrius — abstrakti klasė ir paveldėjimas}
+
+ {\itshape 5 pav. C skyrius — Rule of Five su paveldėjimu}
+
+ {\itshape 6 pav. Testų santrauka su objektų nutekėjimo patikra abiem klasėms}
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md34}{}\doxysubsection{\texorpdfstring{7. Suderinamumas su v1.\+2 logika}{7. Suderinamumas su v1.\+2 logika}}\label{index_autotoc_md34}
+Programa veikia {\bfseries{identiškai}} kaip v1.\+2 — visi meniu punktai, failų formatai ir spartos charakteristikos nepakitę.
+
+
+\begin{DoxyTable}{2}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Komponentas  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Pakeitimai  \\
+{\ttfamily \doxylink{calculate_8h}{calculate.\+h}}  &Jokių — naudoja {\ttfamily s.\+galutinis\+Vid()} ir {\ttfamily compare\texorpdfstring{$\ast$}{*}} funkcijas  \\
+{\ttfamily \doxylink{file_8h}{file.\+h}}  &Jokių — naudoja {\ttfamily s.\+parse\+From\+Line()}, {\ttfamily s.\+append\+List\+To()}, {\ttfamily s.\+nd()}  \\
+{\ttfamily \doxylink{generate_8h}{generate.\+h}}  &Jokių — naudoja pilną konstruktorių  \\
+{\ttfamily \doxylink{print_8h}{print.\+h}}  &Jokių — naudoja {\ttfamily operator\texorpdfstring{$<$}{<}\texorpdfstring{$<$}{<}} (dabar polimorfinį)  \\
+{\ttfamily \doxylink{output_8h}{output.\+h}}  &Jokių  \\
+{\ttfamily \doxylink{enter_8cpp}{enter.\+cpp}}  &Jokių  \\
+{\ttfamily \doxylink{test_8h}{test.\+h}} /\+ {\ttfamily \doxylink{test_8cpp}{test.\+cpp}}  &Jokių  \\
+{\ttfamily \doxylink{main_8h}{main.\+h}}  &Pridėtas {\ttfamily \#include "{}\doxylink{zmogus_8h}{zmogus.\+h}"{}}  \\
+{\ttfamily \doxylink{menu_8cpp}{menu.\+cpp}}  &Jokių (9 punktas jau buvo v1.\+2)  \\
+\end{DoxyTable}
+
+
+Vienintelis pastebimas pakeitimas naudotojui — meniu punkto 9 testas dabar išveda ir abstrakčios klasės patikras.\hypertarget{index_autotoc_md35}{}\doxysubsubsection{\texorpdfstring{Spartos poveikis}{Spartos poveikis}}\label{index_autotoc_md35}
+Virtualūs metodai prideda netiesioginį kvietimą per vtable. Tačiau kritiniai spartos keliai jų {\bfseries{nenaudoja}}:\+
+
+
+\begin{DoxyTable}{3}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Operacija  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Ar virtuali  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Poveikis  \\
+{\ttfamily parse\+From\+Line}  &Ne  &Failo skaitymas nepakito  \\
+{\ttfamily append\+List\+To}  &Ne  &Failo rašymas nepakito  \\
+{\ttfamily \doxylink{calculate_8h_a075f16863229a04047d7d1e57c11e7fd}{calculate\+Galutinis}}  &Ne  &Skaičiavimas nepakito  \\
+{\ttfamily compare\texorpdfstring{$\ast$}{*}} funkcijos  &Ne  &Rikiavimas nepakito  \\
+{\ttfamily print} /\+ {\ttfamily read}  &{\bfseries{Taip}}  &Naudojama tik konsolės išvestyje (ne masiniam apdorojimui)  \\
+\end{DoxyTable}
+
+
+Kiekvienas objektas dabar turi papildomą vtable rodyklę (8 baitai x64 sistemoje). Su 10M studentų tai \texorpdfstring{$\sim$}{\string~}80 MB papildomos atminties — pastebima, bet priimtina.
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md37}{}\doxysubsection{\texorpdfstring{8. Failų struktūra}{8. Failų struktūra}}\label{index_autotoc_md37}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{.}
+\DoxyCodeLine{├──\ LICENSE}
+\DoxyCodeLine{├──\ README.md}
+\DoxyCodeLine{├──\ CMakeLists.txt}
+\DoxyCodeLine{├──\ docs/\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Ekrano\ kopijos}
+\DoxyCodeLine{└──\ OOP\_2/\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Programos\ failai}
+\DoxyCodeLine{\ \ \ \ ├──\ data/\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Testiniai\ duomenų\ failai}
+\DoxyCodeLine{\ \ \ \ │\ \ \ ├──\ studentai1000.txt}
+\DoxyCodeLine{\ \ \ \ │\ \ \ ├──\ studentai10000.txt}
+\DoxyCodeLine{\ \ \ \ │\ \ \ ├──\ studentai100000.txt}
+\DoxyCodeLine{\ \ \ \ │\ \ \ ├──\ studentai1000000.txt}
+\DoxyCodeLine{\ \ \ \ │\ \ \ └──\ studentai10000000.txt}
+\DoxyCodeLine{\ \ \ \ ├──\ zmogus.h\ /\ zmogus.cpp\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ ABSTRAKTI\ bazinė\ klasė\ (nauja\ v1.5)}
+\DoxyCodeLine{\ \ \ \ ├──\ studentas.h\ /\ studentas.cpp\ \ \ \ \ \ \ \ \ \#\ Išvestinė\ klasė\ :\ public\ zmogus}
+\DoxyCodeLine{\ \ \ \ ├──\ testStudentas.h\ /\ testStudentas.cpp\ \#\ Klasių\ metodų\ testas}
+\DoxyCodeLine{\ \ \ \ ├──\ main.h\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ splitResult<T>,\ funkcijų\ deklaracijos}
+\DoxyCodeLine{\ \ \ \ ├──\ OOP\_2.cpp\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ main()\ +\ runProgram<Container>()}
+\DoxyCodeLine{\ \ \ \ ├──\ menu.h\ /\ menu.cpp\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Meniu\ funkcijos}
+\DoxyCodeLine{\ \ \ \ ├──\ enter.h\ /\ enter.cpp\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Rankinio\ įvedimo\ funkcijos}
+\DoxyCodeLine{\ \ \ \ ├──\ generate.h\ /\ generate.cpp\ \ \ \ \ \ \ \ \ \ \ \#\ Generavimo\ funkcijos}
+\DoxyCodeLine{\ \ \ \ ├──\ file.h\ /\ file.cpp\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Failo\ skaitymo\ ir\ rašymo\ šablonai}
+\DoxyCodeLine{\ \ \ \ ├──\ calculate.h\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Skaičiavimo,\ rikiavimo,\ skirstymo\ šablonai}
+\DoxyCodeLine{\ \ \ \ ├──\ output.h\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ outputStudentai<T>}
+\DoxyCodeLine{\ \ \ \ ├──\ print.h\ /\ print.cpp\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Spausdinimo\ funkcijos}
+\DoxyCodeLine{\ \ \ \ └──\ test.h\ /\ test.cpp\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Spartos\ testavimo\ funkcijos}
+
+\end{DoxyCode}
+
+
+\begin{quote}
+{\bfseries{Pastaba dėl {\ttfamily data/\+} aplanko.}} Testavimo funkcijos ({\ttfamily \doxylink{test_8h_a0333d76934216d4c15e53a29532474fd}{test\+Data}}, {\ttfamily \doxylink{main_8h_a7cc207279ba4315c7699200b62e15aeb}{test\+Containers}}) atidaro failus keliu {\ttfamily data/\+studentai\+N.\+txt} — kelias yra {\bfseries{santykinis darbo aplanko atžvilgiu}}. Todėl {\ttfamily data/\+} turi būti ten, iš kur paleidžiama programa. Paleidžiant iš {\ttfamily OOP\+\_\+2/\+} aplanko (arba iš Visual Studio, kur darbo aplankas pagal nutylėjimą yra projekto aplankas), {\ttfamily data/\+} turi būti {\ttfamily OOP\+\_\+2/\+data/\+}. Paleidžiant sukompiliuotą {\ttfamily .exe} iš kitos vietos, {\ttfamily data/\+} reikia perkelti šalia jo. \end{quote}
+
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md39}{}\doxysubsection{\texorpdfstring{9. Naudojimosi instrukcija}{9. Naudojimosi instrukcija}}\label{index_autotoc_md39}
+\hypertarget{index_autotoc_md40}{}\doxysubsubsection{\texorpdfstring{Paleidimas}{Paleidimas}}\label{index_autotoc_md40}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{.\(\backslash\)programa.exe\ \ \ \ \ \ \ \ \ \ \#\ Windows}
+\DoxyCodeLine{./programa\ \ \ \ \ \ \ \ \ \ \ \ \ \ \#\ Linux/Mac}
+
+\end{DoxyCode}
+\hypertarget{index_autotoc_md41}{}\doxysubsubsection{\texorpdfstring{Meniu pasirinkimai}{Meniu pasirinkimai}}\label{index_autotoc_md41}
+
+\begin{DoxyTable}{2}{}{}{1}
+\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Nr.  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Veiksmas  \\
+1  &Įvesti studentus ranka  \\
+2  &Generuoti tik pažymius  \\
+3  &Generuoti studentus automatiškai  \\
+4  &Nuskaityti iš failo  \\
+5  &Generuoti testinį studentų failą  \\
+6  &Spartos testas — failų kūrimas  \\
+7  &Spartos testas — duomenų apdorojimas  \\
+8  &Spartos testas — konteinerių palyginimas  \\
+{\bfseries{9}}  &{\bfseries{Klasių {\ttfamily \doxylink{classzmogus}{zmogus}} ir {\ttfamily \doxylink{classstudentas}{studentas}} metodų testavimas}}  \\
+0  &Baigti  \\
+\end{DoxyTable}
+\hypertarget{index_autotoc_md42}{}\doxysubsubsection{\texorpdfstring{Failo formatas}{Failo formatas}}\label{index_autotoc_md42}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Vardas\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Pavarde\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ND1\ \ \ \ \ \ \ ND2\ \ ...\ \ Egzaminas}
+\DoxyCodeLine{VardasNR1\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ PavardeNR1\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 7\ \ \ \ \ \ \ \ \ 3\ \ ...\ \ \ \ \ \ \ \ \ \ 5}
+
+\end{DoxyCode}
+
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md44}{}\doxysubsection{\texorpdfstring{10. Įdiegimo instrukcija}{10. Įdiegimo instrukcija}}\label{index_autotoc_md44}
+\hypertarget{index_autotoc_md45}{}\doxysubsubsection{\texorpdfstring{Reikalavimai}{Reikalavimai}}\label{index_autotoc_md45}
+
+\begin{DoxyItemize}
+\item C++17 palaikantis kompiliatorius (MSVC 2019+, g++ 8+, clang++ 7+)
+\item CMake 3.\+16+
+\end{DoxyItemize}\hypertarget{index_autotoc_md46}{}\doxysubsubsection{\texorpdfstring{CMake}{CMake}}\label{index_autotoc_md46}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir\ build\ \&\&\ cd\ build}
+\DoxyCodeLine{cmake\ ..}
+\DoxyCodeLine{cmake\ -\/-\/build\ .\ -\/-\/config\ Release}
+
+\end{DoxyCode}
+\hypertarget{index_autotoc_md47}{}\doxysubsubsection{\texorpdfstring{g++ tiesiogiai}{g++ tiesiogiai}}\label{index_autotoc_md47}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cd\ OOP\_2}
+\DoxyCodeLine{g++\ -\/std=c++17\ -\/O2\ -\/Wall\ OOP\_2.cpp\ zmogus.cpp\ studentas.cpp\ testStudentas.cpp\ menu.cpp\ enter.cpp\ generate.cpp\ file.cpp\ print.cpp\ test.cpp\ -\/o\ programa.exe}
+\DoxyCodeLine{./programa.exe}
+
+\end{DoxyCode}
+
+
+Kompiliuoti reikia {\bfseries{iš {\ttfamily OOP\+\_\+2/\+} aplanko}} — taip {\ttfamily .exe} atsiras šalia {\ttfamily data/\+}, ir testavimo funkcijos ras duomenų failus.
+
+\begin{quote}
+{\bfseries{Svarbu:\+}} nepamirškite {\ttfamily \doxylink{zmogus_8cpp}{zmogus.\+cpp}} — be jo linkeris skųsis dėl neapibrėžtų {\ttfamily \doxylink{classzmogus}{zmogus}} konstruktorių ir destruktoriaus. \end{quote}
+\hypertarget{index_autotoc_md48}{}\doxysubsubsection{\texorpdfstring{Visual Studio}{Visual Studio}}\label{index_autotoc_md48}
+Projekto {\bfseries{Properties → Configuration:\+ Release, Platform:\+ x64}}:\+
+\begin{DoxyItemize}
+\item C/\+\+C++ → Language → C++ Language Standard:\+ {\ttfamily ISO C++17 (/\+std:\+c++17)}
+\item C/\+\+C++ → Optimization:\+ {\ttfamily /\+\+O2}, Whole Program Optimization {\ttfamily /\+\+GL}
+\item Linker → Optimization:\+ Link Time Code Generation {\ttfamily /\+\+LTCG}
+\end{DoxyItemize}
+
+Į projektą pridėti {\ttfamily \doxylink{zmogus_8h}{zmogus.\+h}} ir {\ttfamily \doxylink{zmogus_8cpp}{zmogus.\+cpp}}.
+
+\DoxyHorRuler{0}
+\hypertarget{index_autotoc_md50}{}\doxysubsection{\texorpdfstring{11. Pakeitimai v1.\+2 → v1.\+5}{11. Pakeitimai v1.\+2 → v1.\+5}}\label{index_autotoc_md50}
+
+\begin{DoxyItemize}
+\item Sukurta {\bfseries{abstrakti bazinė klasė {\ttfamily \doxylink{classzmogus}{zmogus}}}} ({\ttfamily \doxylink{zmogus_8h}{zmogus.\+h}} /\+ {\ttfamily \doxylink{zmogus_8cpp}{zmogus.\+cpp}}) su {\ttfamily vardas\+\_\+} ir {\ttfamily pavarde\+\_\+} laukais
+\item Klasė padaryta abstrakti dviem būdais:\+ {\bfseries{keturi grynai virtualūs metodai}} ({\ttfamily galutinis}, {\ttfamily print}, {\ttfamily read}, {\ttfamily tipas}) ir {\bfseries{{\ttfamily protected} konstruktoriai}}
+\item {\ttfamily \doxylink{classzmogus}{zmogus}} turi {\bfseries{virtualų destruktorių}} — būtiną naikinant per bazinės klasės rodyklę
+\item {\ttfamily \doxylink{classstudentas}{studentas}} pertvarkyta į {\bfseries{išvestinę klasę}} ({\ttfamily class \doxylink{classstudentas}{studentas} :\+ public \doxylink{classzmogus}{zmogus}})
+\item Visos penkios {\bfseries{Rule of Five}} funkcijos papildytos bazinės klasės kvietimais ({\ttfamily \doxylink{classzmogus}{zmogus(other)}}, {\ttfamily zmogus::\+operator=(other)}, {\ttfamily \doxylink{classzmogus}{zmogus(std::\+move(other))}})
+\item {\ttfamily operator\texorpdfstring{$<$}{<}\texorpdfstring{$<$}{<}} ir {\ttfamily operator\texorpdfstring{$>$}{>}\texorpdfstring{$>$}{>}} tapo {\bfseries{polimorfiniais}} — priima {\ttfamily \doxylink{classzmogus}{zmogus}\&} ir kviečia virtualius {\ttfamily print()} /\+ {\ttfamily read()}
+\item Pridėti atskiri objektų skaitikliai {\ttfamily \doxylink{classzmogus_ab306c91dd20d39cf3f68ea0a82065440}{zmogus::\+gyvu\+Zmoniu}} ir {\ttfamily \doxylink{classstudentas_a161bd45e2858bda6bf2419c8fe4b63f9}{studentas::\+gyvu\+Studentu}}
+\item Testas papildytas {\bfseries{A skyriumi}} (7 poskyriai):\+ abstrakčios klasės patikra, paveldėjimo ryšys, polimorfizmas, virtualus destruktorius, polimorfinis konteineris
+\item Visi v1.\+2 testai (B–E skyriai) patikrinti ir {\bfseries{papildyti paveldėjimo patikromis}} — ar bazinės klasės laukai teisingai kopijuojami ir perkeliami
+\item Programos veikimo logika ir failų formatai {\bfseries{nepakitę}} — visi kiti moduliai ({\ttfamily \doxylink{calculate_8h}{calculate.\+h}}, {\ttfamily \doxylink{file_8h}{file.\+h}}, {\ttfamily \doxylink{generate_8h}{generate.\+h}}, {\ttfamily \doxylink{print_8h}{print.\+h}}) veikia be pakeitimų 
+\end{DoxyItemize}

@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['setegzaminas_0',['setEgzaminas',['../classstudentas.html#a37948add380307c0cf99cd21fa22072d',1,'studentas']]],
+  ['setnd_1',['setNd',['../classstudentas.html#a0ee1ef0c067e40d1c74853780c36a253',1,'studentas']]],
+  ['setpavarde_2',['setPavarde',['../classzmogus.html#a931b596ee096619748a96d5957ebf6d1',1,'zmogus']]],
+  ['setvardas_3',['setVardas',['../classzmogus.html#a6fd8af389c1dcfdf1799c69ea2d95a27',1,'zmogus']]],
+  ['sistema_20oop_5fmarius_5faugustinas_4',['Studentų Informacinė Sistema OOP_Marius_Augustinas',['../index.html',1,'']]],
+  ['skyriai_20—_20v1_202_20testų_20patikra_5',['B–E skyriai — v1.2 testų patikra',['../index.html#autotoc_md31',1,'']]],
+  ['skyrius_20—_20nauji_20v1_205_20testai_6',['A skyrius — nauji v1.5 testai',['../index.html#autotoc_md30',1,'']]],
+  ['sortstudentai_7',['sortStudentai',['../calculate_8h.html#a86a9a7ec6b079ece5e376ea000412fa4',1,'calculate.h']]],
+  ['spartos_20poveikis_8',['Spartos poveikis',['../index.html#autotoc_md35',1,'']]],
+  ['splitresult_9',['splitResult',['../structsplit_result.html',1,'']]],
+  ['splitstudentai_10',['splitStudentai',['../calculate_8h.html#a6446249f282aca6b2314630b80b2228a',1,'calculate.h']]],
+  ['std_3a_3amove_20other_20move_20konstruktoriuje_11',['Kodėl &lt;span class=&quot;tt&quot;&gt;std::move(other)&lt;/span&gt; move konstruktoriuje',['../index.html#autotoc_md20',1,'']]],
+  ['struktūra_12',['struktūra',['../index.html#autotoc_md37',1,'8. Failų struktūra'],['../index.html#autotoc_md29',1,'Testų struktūra']]],
+  ['studentų_20informacinė_20sistema_20oop_5fmarius_5faugustinas_13',['Studentų Informacinė Sistema OOP_Marius_Augustinas',['../index.html',1,'']]],
+  ['studentas_14',['studentas',['../index.html#autotoc_md14',1,'3. Išvestinė klasė &lt;span class=&quot;tt&quot;&gt;studentas&lt;/span&gt;'],['../classstudentas.html',1,'studentas'],['../classstudentas.html#a40a99ea5d527a3d443123f4785550787',1,'studentas::studentas()'],['../classstudentas.html#af2a3b557dbe038a27dd36113b2a2b0da',1,'studentas::studentas(const std::string &amp;vardas, const std::string &amp;pavarde, const std::vector&lt; int &gt; &amp;nd, int egzaminas)'],['../classstudentas.html#a24c4da0cb4e037ee3f825d615d2874c1',1,'studentas::studentas(std::istream &amp;is)'],['../classstudentas.html#aa35e7c18fd1b6558d9da4c00c4389de4',1,'studentas::studentas(const studentas &amp;other)'],['../classstudentas.html#a0fc737678aee77843e00abbd82a3b79e',1,'studentas::studentas(studentas &amp;&amp;other) noexcept']]],
+  ['studentas_2ecpp_15',['studentas.cpp',['../studentas_8cpp.html',1,'']]],
+  ['studentas_2eh_16',['studentas.h',['../studentas_8h.html',1,'']]],
+  ['studio_17',['Visual Studio',['../index.html#autotoc_md48',1,'']]],
+  ['su_20paveldėjimu_18',['4. Rule of Five su paveldėjimu',['../index.html#autotoc_md19',1,'']]],
+  ['su_20v1_202_20logika_19',['7. Suderinamumas su v1.2 logika',['../index.html#autotoc_md34',1,'']]],
+  ['suderinamumas_20su_20v1_202_20logika_20',['7. Suderinamumas su v1.2 logika',['../index.html#autotoc_md34',1,'']]],
+  ['sukurti_20neįmanoma_21',['Demonstracija — objekto sukurti neįmanoma',['../index.html#autotoc_md11',1,'']]]
+];
