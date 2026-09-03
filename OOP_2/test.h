@@ -69,14 +69,14 @@ void testData(int n)
         << elapsed4.count() << u8" sekundžių.\n";
 
     auto start5 = std::chrono::high_resolution_clock::now();
-    writeStudentaiListToFile<Container>(result.kietiakai, "testkietiakai" + std::to_string(n) + ".txt");
+    writeStudentaiToFile<Container>(result.kietiakai, "testkietiakai" + std::to_string(n) + ".txt");
     auto end5 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed5 = end5 - start5;
     std::cout << n << u8" Kietiakai failo generavimas užtruko: "
         << elapsed5.count() << u8" sekundžių.\n";
 
     auto start6 = std::chrono::high_resolution_clock::now();
-    writeStudentaiListToFile<Container>(result.vargsiukai, "testvargsiukai" + std::to_string(n) + ".txt");
+    writeStudentaiToFile<Container>(result.vargsiukai, "testvargsiukai" + std::to_string(n) + ".txt");
     auto end6 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed6 = end6 - start6;
 
